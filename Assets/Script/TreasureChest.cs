@@ -1,0 +1,220 @@
+using UnityEngine;
+using System.Collections.Generic;
+
+public enum ChestType { Wooden, Copper, Silver, Gold }
+
+public class TreasureChest : MonoBehaviour
+{
+    [Header("Chest Settings")]
+    [SerializeField] private ChestType chestType = ChestType.Wooden;
+    [SerializeField] private float openTime = 1f;
+    [SerializeField] private float interactDistance = 2f;
+
+    [Header("Visual")]
+    [SerializeField] private GameObject closedVisual;
+    [SerializeField] private GameObject openVisual;
+    [SerializeField] private GameObject highlightEffect;
+
+    private bool isOpened;
+    private bool isOpening;
+    private PlayerMove openingPlayer;
+    private float currentOpenTimer;
+    private InventoryManager cachedInventory;
+    private static PlayerMove[] cachedPlayers;
+    private static float playerCacheTime;
+    private const float PlayerCacheInterval = 1f;
+
+    private float sqrInteractDistance;
+    private float sqrInteractPadding;
+
+    public ChestType Type { get { return chestType; } }
+    public bool IsOpened { get { return isOpened; } }
+    public bool IsOpening { get { return isOpening; } }
+
+    private void Awake()
+    {
+        sqrInteractDistance = interactDistance * interactDistance;
+        sqrInteractPadding = (interactDistance + 0.5f) * (interactDistance + 0.5f);
+    }
+
+    private void Start()
+    {
+        if (closedVisual != null) closedVisual.SetActive(true);
+        if (openVisual != null) openVisual.SetActive(false);
+        if (highlightEffect != null) highlightEffect.SetActive(false);
+    }
+
+    private void Update()
+    {
+        if (isOpened || !isOpening || openingPlayer == null) return;
+
+        float sqrDist = SqrDistanceTo(openingPlayer.transform.position);
+        if (sqrDist > sqrInteractPadding)
+        {
+            CancelOpening();
+            return;
+        }
+
+        currentOpenTimer += Time.deltaTime;
+        if (currentOpenTimer >= openTime)
+            OpenChest(openingPlayer);
+    }
+
+    private void OnMouseDown()
+    {
+        if (isOpened || isOpening) return;
+        TryInteract();
+    }
+
+    public void TryInteract()
+    {
+        if (Time.time - playerCacheTime > PlayerCacheInterval || cachedPlayers == null)
+        {
+            cachedPlayers = FindObjectsByType<PlayerMove>(FindObjectsSortMode.None);
+            playerCacheTime = Time.time;
+        }
+
+        PlayerMove nearest = null;
+        float nearestSqrDist = float.MaxValue;
+
+        foreach (var p in cachedPlayers)
+        {
+            if (p == null) continue;
+            float d = SqrDistanceTo(p.transform.position);
+            if (d < nearestSqrDist)
+            {
+                nearestSqrDist = d;
+                nearest = p;
+            }
+        }
+
+        if (nearest != null && nearestSqrDist <= sqrInteractDistance)
+            StartOpening(nearest);
+    }
+
+    public void StartOpening(PlayerMove player)
+    {
+        if (isOpened || isOpening) return;
+        isOpening = true;
+        openingPlayer = player;
+        currentOpenTimer = 0f;
+        if (highlightEffect != null) highlightEffect.SetActive(true);
+    }
+
+    private void CancelOpening()
+    {
+        isOpening = false;
+        openingPlayer = null;
+        currentOpenTimer = 0f;
+        if (highlightEffect != null) highlightEffect.SetActive(false);
+    }
+
+    private void OpenChest(PlayerMove player)
+    {
+        isOpened = true;
+        isOpening = false;
+        if (closedVisual != null) closedVisual.SetActive(false);
+        if (openVisual != null) openVisual.SetActive(true);
+        if (highlightEffect != null) highlightEffect.SetActive(false);
+
+        if (cachedInventory == null)
+            cachedInventory = FindFirstObjectByType<InventoryManager>();
+
+        foreach (var item in GenerateLoot())
+        {
+            if (cachedInventory != null)
+                cachedInventory.AddItem(item, player);
+        }
+    }
+
+    private List<GameItem> GenerateLoot()
+    {
+        List<GameItem> items = new List<GameItem>();
+        float roll = Random.value;
+
+        switch (chestType)
+        {
+            case ChestType.Wooden:
+                if (roll < 0.3f)
+                    items.Add(new GameItem { itemType = ItemType.Consumable, itemId = "health_potion_1", itemName = "初级生命药水", description = "50HP/秒，持续4秒", healAmount = 200f });
+                else if (roll < 0.6f)
+                    items.Add(new GameItem { itemType = ItemType.Currency, itemId = "gold", itemName = "金币", goldAmount = 50 });
+                else
+                    items.Add(GenerateRandomEquipment(false));
+                break;
+
+            case ChestType.Copper:
+                if (roll < 0.4f)
+                    items.Add(GenerateRandomEquipment(false));
+                else if (roll < 0.6f)
+                    items.Add(GenerateRandomEquipment(true));
+                else if (roll < 0.8f)
+                    items.Add(new GameItem { itemType = ItemType.Consumable, itemId = "health_potion_1", itemName = "初级生命药水", description = "50HP/秒，持续4秒", healAmount = 200f });
+                else
+                    items.Add(new GameItem { itemType = ItemType.Currency, itemId = "gold", itemName = "金币", goldAmount = 100 });
+
+                if (Random.value < 0.1f)
+                    items.Add(new GameItem { itemType = ItemType.Equipment, itemId = "weapon_gem_1", itemName = "普通武器宝石", description = "DPS+40", slotType = EquipmentSlotType.WeaponGem, rarity = ItemRarity.Common, statType = StatType.DPS, statValue = 40 });
+                break;
+        }
+
+        return items;
+    }
+
+    private static readonly EquipmentSlotType[] ArmorSlots =
+        { EquipmentSlotType.Wrist, EquipmentSlotType.Chest, EquipmentSlotType.Shoulder, EquipmentSlotType.Pants };
+
+    private static readonly float[] NormalHP  = { 40f, 80f, 50f, 60f };
+    private static readonly float[] QualityHP = { 100f, 200f, 150f, 150f };
+    private static readonly float[] NormalDPS  = { 15f, 20f, 15f, 15f };
+    private static readonly float[] QualityDPS = { 40f, 50f, 40f, 40f };
+
+    private static readonly string[] SlotNames = { "护腕", "铠甲", "护肩", "裤子" };
+
+    private GameItem GenerateRandomEquipment(bool isQuality)
+    {
+        int slotIndex = Random.Range(0, ArmorSlots.Length);
+        EquipmentSlotType slot = ArmorSlots[slotIndex];
+        float statValue;
+        string statDesc;
+
+        if (Random.value < 0.5f)
+        {
+            statValue = isQuality ? QualityHP[slotIndex] : NormalHP[slotIndex];
+            statDesc = "生命值+" + statValue + "HP";
+        }
+        else
+        {
+            statValue = isQuality ? QualityDPS[slotIndex] : NormalDPS[slotIndex];
+            statDesc = "DPS+" + statValue;
+        }
+
+        bool isHealth = statValue > 50;
+        string prefix = isHealth ? "生命" : "力量";
+
+        return new GameItem
+        {
+            itemType = ItemType.Equipment,
+            itemId = (isQuality ? "quality_" : "common_") + prefix.ToLower() + "_" + SlotNames[slotIndex],
+            itemName = (isQuality ? "精品" : "普通") + prefix + SlotNames[slotIndex],
+            description = statDesc,
+            slotType = slot,
+            rarity = isQuality ? ItemRarity.Quality : ItemRarity.Common,
+            statType = isHealth ? StatType.Health : StatType.DPS,
+            statValue = statValue
+        };
+    }
+
+    private float SqrDistanceTo(Vector3 point)
+    {
+        float dx = transform.position.x - point.x;
+        float dz = transform.position.z - point.z;
+        return dx * dx + dz * dz;
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = isOpened ? Color.gray : Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, interactDistance);
+    }
+}

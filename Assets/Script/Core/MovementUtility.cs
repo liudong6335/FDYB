@@ -1,3 +1,16 @@
+﻿/*
+ * ============================================================
+ *  MovementUtility  -  移动工具类（静态工具）
+ * ============================================================
+ *
+ * 【功能】
+ *   提供通用的移动辅助方法，目前只有面朝方向功能。
+ *   供 DemonMinion、NPCGoddess、PlayerMove 调用，避免代码重复。
+ *
+ * 【方法】
+ *   FaceDirection(transform, direction, rotationSpeed, deltaTime)
+ *     - 让物体平滑转向指定方向（仅在XZ平面上旋转）
+ */
 using UnityEngine;
 
 /// <summary>

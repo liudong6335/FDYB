@@ -1,3 +1,28 @@
+﻿/*
+ * ============================================================
+ *  PlayerCombat  -  玩家战斗系统
+ * ============================================================
+ *
+ * 【功能】
+ *   管理玩家的战斗逻辑：选择目标、攻击、发射投射物、
+ *   追击/脱离判定。与 PlayerMove 和 PlayerHealth 配合使用。
+ *
+ * 【挂载对象】
+ *   玩家对象（与 PlayerMove 在同一对象）
+ *
+ * 【可调节参数】
+ *   attackCooldown         - 攻击冷却时间（秒）
+ *   attackLockTime         - 攻击锁定时间（期间不能移动）
+ *   chaseMaxDistance       - 最大追击距离（超出则放弃目标）
+ *   enemyLayer             - 敌人所在的层级
+ *   attackProjectilePrefab - 攻击投射物预制体
+ *   projectileSpawnPoint   - 投射物生成位置
+ *   projectileSpeed        - 投射物飞行速度
+ *
+ * 【说明】
+ *   - 没有投射物预制体时使用射线检测直接造成伤害
+ *   - 攻击怪物（DemonMinion）会自动注册仇恨
+ */
 using UnityEngine;
 using System.Collections;
 
@@ -170,3 +195,4 @@ public class PlayerCombat : MonoBehaviour
         return dx * dx + dz * dz;
     }
 }
+

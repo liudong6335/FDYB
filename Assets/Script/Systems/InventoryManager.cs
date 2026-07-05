@@ -1,4 +1,35 @@
-﻿using UnityEngine;
+﻿/*
+ * ============================================================
+ *  InventoryManager  -  背包/装备管理器
+ * ============================================================
+ *
+ * 【功能】
+ *   管理两个玩家的装备栏、背包、金币。
+ *   支持装备穿戴、自动合成、物品出售、使用消耗品。
+ *   装备属性会自动同步到玩家（加血量/加伤害）。
+ *
+ * 【挂载对象】
+ *   场景中的单例对象（DontDestroyOnLoad）
+ *
+ * 【可调节参数】
+ *   startingItems  - 初始物品列表
+ *   player1 / 2    - 两个玩家对象的引用
+ *
+ * 【物品类型】
+ *   Equipment  - 装备（腕甲/胸甲/护肩/裤子/武器宝石）
+ *   Consumable - 消耗品（生命药水）
+ *   Currency   - 金币
+ *
+ * 【装备合成】
+ *   同一部位+同一属性+同品质的两件装备可以自动合成为更高品质
+ *
+ * 【外部调用】
+ *   AddItem(item, player)      - 给玩家添加物品
+ *   UseConsumable(id, player)  - 使用消耗品
+ *   SellItem(id, player)       - 出售物品
+ *   AddGold/SpendGold           - 增减金币
+ */
+using UnityEngine;
 using System;
 using System.Collections.Generic;
 
@@ -277,3 +308,4 @@ public class InventoryManager : MonoBehaviour
     public int P1Gold { get { return p1Gold; } }
     public int P2Gold { get { return p2Gold; } }
 }
+

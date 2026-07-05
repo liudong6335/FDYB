@@ -1,4 +1,39 @@
-﻿using UnityEngine;
+﻿/*
+ * ============================================================
+ *  PlayerMove  -  玩家移动+输入控制
+ * ============================================================
+ *
+ * 【功能】
+ *   玩家角色的移动控制：鼠标点击移动（类似MOBA）、
+ *   键盘WASD移动、自动追击敌人、加速技能（Q键）。
+ *   整合了 PlayerHealth 和 PlayerCombat。
+ *
+ * 【挂载对象】
+ *   玩家对象（同时需挂载 PlayerHealth 和 PlayerCombat）
+ *
+ * 【可调节参数】
+ *   （移动）
+ *   moveSpeed              - 基础移动速度
+ *   rotationSpeed          - 转向速度
+ *   stoppingDistance       - 到达目的地停止距离
+ *   groundLayer            - 地面层级（用于鼠标点击）
+ *
+ *   （加速技能 - Q键）
+ *   speedBoostMultiplier   - 加速倍率
+ *   speedBoostDuration     - 加速持续时间
+ *   speedBoostCooldown     - 加速冷却时间
+ *   speedBoostKey          - 加速快捷键（默认Q）
+ *
+ * 【操作说明】
+ *   - 鼠标左键点敌人 = 攻击
+ *   - 鼠标左键点地面 = 移动
+ *   - WASD = 键盘移动
+ *   - Q = 加速技能
+ *
+ * 【说明】
+ *   使用 CharacterController 移动，带碰撞阻挡
+ */
+using UnityEngine;
 using UnityEngine.EventSystems;
 
 [RequireComponent(typeof(PlayerHealth))]
@@ -238,3 +273,4 @@ public class PlayerMove : MonoBehaviour
 
     #endregion
 }
+

@@ -1,3 +1,38 @@
+﻿/*
+ * ============================================================
+ *  Health  -  通用血量组件
+ * ============================================================
+ *
+ * 【功能】
+ *   提供血量、受伤、治疗、复活、自动回血、战斗状态。
+ *   所有有血量的物体（玩家/NPC/怪物）共用此组件。
+ *
+ * 【挂载对象】
+ *   需要血量的游戏对象（通过 RequireComponent 自动添加）
+ *
+ * 【可调节参数】
+ *   maxHealth             - 最大血量
+ *   currentHealth         - 当前血量（运行时自动初始化为满血）
+ *
+ *   enableRegen           - 是否启用自动回血
+ *   regenPerSecond        - 每秒回血量
+ *   regenDelayAfterDamage - 受伤后延迟多久开始回血
+ *   disableRegenInCombat  - 战斗中是否禁用回血
+ *   combatTimeout         - 受伤后维持战斗状态的时间
+ *
+ * 【外部调用】
+ *   TakeDamage(amount)     - 受伤（负数=治疗）
+ *   Heal(amount)           - 治疗
+ *   Revive(healthPercent)  - 复活（指定血量百分比）
+ *   SetMaxHealth(newMax)   - 动态修改最大血量
+ *   ResetToFull()          - 回满血
+ *   SetInCombat(bool)      - 设置战斗状态
+ *
+ * 【事件】
+ *   onHealthChanged(百分比)  - 血量变化时触发
+ *   onDeath                 - 死亡时触发
+ *   onRevive                - 复活时触发
+ */
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -112,3 +147,4 @@ public class Health : MonoBehaviour
         if (value) combatTimer = combatTimeout;
     }
 }
+

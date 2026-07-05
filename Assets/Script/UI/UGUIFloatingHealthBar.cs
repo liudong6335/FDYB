@@ -1,4 +1,31 @@
-﻿using UnityEngine;
+﻿/*
+ * ============================================================
+ *  UGUIFloatingHealthBar  -  浮动血条（怪物/通用）
+ * ============================================================
+ *
+ * 【功能】
+ *   在物体头顶显示血条，跟随物体在屏幕上的位置移动。
+ *   血条颜色随血量变化（绿→黄→红），有平滑过渡效果。
+ *   所有血条共享一个画布（HealthBarsCanvas）。
+ *
+ * 【挂载对象】
+ *   需要显示血条的游戏对象（怪物/物体等）
+ *
+ * 【可调节参数】
+ *   healthProvider   - 血量数据提供者（实现 IHealthProvider 接口）
+ *   offset           - 血条相对头顶的偏移
+ *   barWidth/Height  - 血条尺寸
+ *   borderThick      - 边框厚度
+ *   frameColor       - 边框颜色
+ *   bgColor          - 背景色
+ *   high/mid/lowColor- 高/中/低血量颜色
+ *   smoothSpeed      - 血条变化平滑速度
+ *   hideAtFullHealth - 满血时是否隐藏
+ *
+ * 【说明】
+ *   代码运行时动态生成UI，不需要在Canvas下手动创建
+ */
+using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
@@ -225,3 +252,4 @@ public class UGUIFloatingHealthBar : MonoBehaviour
         return path;
     }
 }
+

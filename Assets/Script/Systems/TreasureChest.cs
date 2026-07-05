@@ -1,3 +1,32 @@
+﻿/*
+ * ============================================================
+ *  TreasureChest  -  宝箱
+ * ============================================================
+ *
+ * 【功能】
+ *   游戏中的可交互宝箱。点击后读条开启，开启后获得随机奖励。
+ *   读条期间移动会取消开启。
+ *   不同等级的宝箱出不同品质的奖励。
+ *
+ * 【挂载对象】
+ *   场景中的宝箱游戏对象（带碰撞体）
+ *
+ * 【可调节参数】
+ *   chestType        - 宝箱类型（木/铜/银/金）
+ *   openTime         - 开启读条时间（秒）
+ *   interactDistance - 玩家可交互的最大距离
+ *   closedVisual     - 关闭状态的视觉效果
+ *   openVisual       - 打开状态的视觉效果
+ *   highlightEffect  - 读条时的高亮效果
+ *
+ * 【宝箱类型说明】
+ *   Wooden - 普通奖励（药水/金币/普通装备）
+ *   Copper - 更好的奖励（含高品质装备和武器宝石）
+ *
+ * 【操作说明】
+ *   - 靠近宝箱，鼠标点击即可开始开启
+ *   - 读条期间移动会取消
+ */
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -136,9 +165,9 @@ public class TreasureChest : MonoBehaviour
         {
             case ChestType.Wooden:
                 if (roll < 0.3f)
-                    items.Add(new GameItem { itemType = ItemType.Consumable, itemId = "health_potion_1", itemName = "初级生命药水", description = "50HP/秒，持续4秒", healAmount = 200f });
+                    items.Add(new GameItem { itemType = ItemType.Consumable, itemId = "health_potion_1", itemName = "鍒濈骇鐢熷懡鑽按", description = "50HP/绉掞紝鎸佺画4绉?, healAmount = 200f });
                 else if (roll < 0.6f)
-                    items.Add(new GameItem { itemType = ItemType.Currency, itemId = "gold", itemName = "金币", goldAmount = 50 });
+                    items.Add(new GameItem { itemType = ItemType.Currency, itemId = "gold", itemName = "閲戝竵", goldAmount = 50 });
                 else
                     items.Add(GenerateRandomEquipment(false));
                 break;
@@ -149,12 +178,12 @@ public class TreasureChest : MonoBehaviour
                 else if (roll < 0.6f)
                     items.Add(GenerateRandomEquipment(true));
                 else if (roll < 0.8f)
-                    items.Add(new GameItem { itemType = ItemType.Consumable, itemId = "health_potion_1", itemName = "初级生命药水", description = "50HP/秒，持续4秒", healAmount = 200f });
+                    items.Add(new GameItem { itemType = ItemType.Consumable, itemId = "health_potion_1", itemName = "鍒濈骇鐢熷懡鑽按", description = "50HP/绉掞紝鎸佺画4绉?, healAmount = 200f });
                 else
-                    items.Add(new GameItem { itemType = ItemType.Currency, itemId = "gold", itemName = "金币", goldAmount = 100 });
+                    items.Add(new GameItem { itemType = ItemType.Currency, itemId = "gold", itemName = "閲戝竵", goldAmount = 100 });
 
                 if (Random.value < 0.1f)
-                    items.Add(new GameItem { itemType = ItemType.Equipment, itemId = "weapon_gem_1", itemName = "普通武器宝石", description = "DPS+40", slotType = EquipmentSlotType.WeaponGem, rarity = ItemRarity.Common, statType = StatType.DPS, statValue = 40 });
+                    items.Add(new GameItem { itemType = ItemType.Equipment, itemId = "weapon_gem_1", itemName = "鏅€氭鍣ㄥ疂鐭?, description = "DPS+40", slotType = EquipmentSlotType.WeaponGem, rarity = ItemRarity.Common, statType = StatType.DPS, statValue = 40 });
                 break;
         }
 
@@ -169,7 +198,7 @@ public class TreasureChest : MonoBehaviour
     private static readonly float[] NormalDPS  = { 15f, 20f, 15f, 15f };
     private static readonly float[] QualityDPS = { 40f, 50f, 40f, 40f };
 
-    private static readonly string[] SlotNames = { "护腕", "铠甲", "护肩", "裤子" };
+    private static readonly string[] SlotNames = { "鎶よ厱", "閾犵敳", "鎶よ偐", "瑁ゅ瓙" };
 
     private GameItem GenerateRandomEquipment(bool isQuality)
     {
@@ -181,7 +210,7 @@ public class TreasureChest : MonoBehaviour
         if (Random.value < 0.5f)
         {
             statValue = isQuality ? QualityHP[slotIndex] : NormalHP[slotIndex];
-            statDesc = "生命值+" + statValue + "HP";
+            statDesc = "鐢熷懡鍊?" + statValue + "HP";
         }
         else
         {
@@ -190,13 +219,13 @@ public class TreasureChest : MonoBehaviour
         }
 
         bool isHealth = statValue > 50;
-        string prefix = isHealth ? "生命" : "力量";
+        string prefix = isHealth ? "鐢熷懡" : "鍔涢噺";
 
         return new GameItem
         {
             itemType = ItemType.Equipment,
             itemId = (isQuality ? "quality_" : "common_") + prefix.ToLower() + "_" + SlotNames[slotIndex],
-            itemName = (isQuality ? "精品" : "普通") + prefix + SlotNames[slotIndex],
+            itemName = (isQuality ? "绮惧搧" : "鏅€?) + prefix + SlotNames[slotIndex],
             description = statDesc,
             slotType = slot,
             rarity = isQuality ? ItemRarity.Quality : ItemRarity.Common,

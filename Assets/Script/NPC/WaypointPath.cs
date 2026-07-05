@@ -1,4 +1,27 @@
-﻿using UnityEngine;
+﻿/*
+ * ============================================================
+ *  WaypointPath  -  路径点系统
+ * ============================================================
+ *
+ * 【功能】
+ *   定义一组路径点，供 NPCGoddess 沿着行走。
+ *   支持循环路径和非循环路径。
+ *   在场景视图中会绘制路径线方便编辑。
+ *
+ * 【挂载对象】
+ *   场景中的空对象，作为路径点的容器
+ *
+ * 【可调节参数】
+ *   waypoints       - 路径点列表（在 Inspector 中编辑坐标）
+ *   lineColor       - 场景视图中的路径线颜色
+ *   waypointRadius  - 路径点的显示半径
+ *   loopPath        - 是否循环（走完回到起点）
+ *   arriveDistance  - 判定到达路径点的距离
+ *
+ * 【说明】
+ *   路径点是相对于当前物体的局部坐标，移动物体整体路径会跟着动
+ */
+using UnityEngine;
 using System.Collections.Generic;
 
 public class WaypointPath : MonoBehaviour

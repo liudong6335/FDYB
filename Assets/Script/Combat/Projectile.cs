@@ -1,4 +1,28 @@
-﻿using UnityEngine;
+﻿/*
+ * ============================================================
+ *  Projectile  -  投射物（子弹/技能弹道）
+ * ============================================================
+ *
+ * 【功能】
+ *   朝目标方向飞行的投射物，命中敌人后造成伤害并销毁。
+ *   支持指定目标和指定方向两种发射方式。
+ *
+ * 【挂载对象】
+ *   投射物预制体（Projectile Prefab）
+ *
+ * 【可调节参数】
+ *   speed         - 飞行速度（默认20）
+ *
+ * 【外部调用】
+ *   Initialize(targetPos, damage, layerMask)
+ *     - 朝目标位置发射，自动计算方向
+ *   InitializeDirection(dir, damage, range, layerMask)
+ *     - 朝指定方向发射，指定飞行距离
+ *
+ * 【说明】
+ *   需要场景中有 IDamageable 接口的物体才能造成伤害
+ */
+using UnityEngine;
 
 public class Projectile : MonoBehaviour
 {
@@ -79,3 +103,4 @@ public class Projectile : MonoBehaviour
         }
     }
 }
+

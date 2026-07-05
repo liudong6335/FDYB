@@ -1,3 +1,45 @@
+﻿/*
+ * ============================================================
+ *  GameManager  -  游戏管理器（核心控制器）
+ * ============================================================
+ *
+ * 【功能】
+ *   管理游戏整体流程：阶段切换（护送→探索→Boss）、
+ *   小怪激活/复活、宝箱定时生成、玩家惩罚（离NPC太远）、
+ *   Boss苏醒倒计时。
+ *
+ * 【挂载对象】
+ *   场景中的 GameManager 游戏对象（单例，DontDestroyOnLoad）
+ *
+ * 【可调节参数】
+ *   （护送）
+ *   npcMaxPlayerDistance   - 玩家与NPC最大允许距离（超出则惩罚）
+ *
+ *   （生成）
+ *   demonMinionPrefab      - 小怪预制体
+ *   demonSpawnInterval     - 小怪激活间隔
+ *   maxDemonMinions        - 同时最多存在的小怪数量
+ *   maxDemonLevel          - 小怪最高等级
+ *   demonReviveTime        - 小怪复活时间（秒）
+ *
+ *   （Boss苏醒）
+ *   bossAwakenTime         - Boss苏醒倒计时（秒，默认480=8分钟）
+ *   killAccelerationPerKill- 每击杀一只小怪使Boss提前苏醒的秒数
+ *
+ *   （宝箱）
+ *   wooden/copper chest prefab - 木/铜宝箱预制体
+ *   totalWoodenChests      - 总共生成的木箱数
+ *   chestSpawnPerMinute    - 每分钟生成宝箱数
+ *   woodenChestStartDelay  - 木箱首次生成延迟
+ *   copperChestSpawnTime   - 铜箱首次生成时间
+ *
+ *   （惩罚）
+ *   penaltySpeedMultiplier - 远离NPC时的移速倍数（0.5=减速50%）
+ *   penaltyHealthDrain     - 远离NPC时的每秒扣血量
+ *
+ * 【说明】
+ *   玩家移出NPC太远会减速+扣血，Boss倒计时到0则进入Boss战
+ */
 using UnityEngine;
 using UnityEngine.Events;
 using System.Collections.Generic;
@@ -285,3 +327,4 @@ public class GameManager : MonoBehaviour
         Gizmos.DrawWireSphere(npcGoddess.transform.position, npcMaxPlayerDistance);
     }
 }
+

@@ -1,3 +1,30 @@
+﻿/*
+ * ============================================================
+ *  UGUINPCHealthBar  -  NPC女神专属血条
+ * ============================================================
+ *
+ * 【功能】
+ *   NPC女神（阿满）头顶的专用血条，显示名称+血量。
+ *   比通用浮血条（UGUIFloatingHealthBar）多了名字显示。
+ *   与通用血条共享同一个画布。
+ *
+ * 【挂载对象】
+ *   NPC 女神对象（与 NPCGoddess 在同一对象）
+ *
+ * 【可调节参数】
+ *   npc             - NPCGoddess 组件引用
+ *   offset          - 血条偏移位置
+ *   barWidth/Height - 血条尺寸
+ *   borderThick     - 边框厚度
+ *   frameColor / bgColor / high/mid/lowColor - 颜色
+ *   nameLabel       - 显示的名称文字（默认"Ah Man"）
+ *   labelFontSize   - 名称字体大小
+ *   labelColor      - 名称颜色
+ *   showAlways      - 是否始终显示（不勾选则满血时隐藏）
+ *
+ * 【说明】
+ *   代码运行时动态生成UI，不需要手动创建
+ */
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -192,3 +219,4 @@ public class UGUINPCHealthBar : MonoBehaviour
         if (panelRect != null) Destroy(panelRect.gameObject);
     }
 }
+

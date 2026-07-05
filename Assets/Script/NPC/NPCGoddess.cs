@@ -1,3 +1,64 @@
+﻿/*
+ * ============================================================
+ *  NPCGoddess  -  NPC女神（被护送目标）
+ * ============================================================
+ *
+ * 【功能】
+ *   玩家需要护送的女神NPC。会沿着路径（WaypointPath）行走，
+ *   途中可以给玩家和自己加血，会躲避障碍物。
+ *   到达终点后触发事件（怪物死亡倒计时）。
+ *
+ * 【挂载对象】
+ *   场景中的 NPC 女神对象（带有 Animator）
+ *
+ * 【可调节参数】
+ *   （属性）
+ *   maxHealth                - 最大血量
+ *   healthRegen              - 每秒回血
+ *
+ *   （移动）
+ *   waypointPath             - 行走路径（拖入 WaypointPath 对象）
+ *   rotationSpeed            - 转向速度
+ *   minSpeed / maxSpeed       - 最小/最大行走速度
+ *   speedSmoothTime          - 速度变化平滑时间
+ *
+ *   （路径随机浮动）
+ *   waypointFloatMin/Max     - 到达路径点时的随机偏移范围
+ *
+ *   （暂停行为）
+ *   pausesPerMinute          - 每分钟平均停顿次数
+ *   pauseDurationMin/Max      - 每次停顿的时长范围
+ *
+ *   （总耗时）
+ *   targetTimeMin/Max         - 预计到达终点的耗时范围（秒）
+ *
+ *   （障碍物躲避）
+ *   obstacleCheckDistance    - 前方检测距离
+ *   obstacleCheckRadius      - 检测半径
+ *   obstacleAvoidStrength    - 躲避强度
+ *
+ *   （治疗技能）
+ *   healAmount               - 每次治疗量（自己+附近玩家）
+ *   healCooldown             - 治疗冷却时间
+ *   healCastTime             - 施法时间
+ *   healRange                - 治疗范围
+ *   selfHealThreshold        - 自己血量低于此值开始治疗
+ *   playerHealThreshold      - 玩家血量低于此值治疗玩家
+ *
+ *   （受伤减速）
+ *   damageSlowMultiplier     - 受伤后移动速度倍率
+ *   damageSlowDuration       - 减速持续时间
+ *
+ *   （卡住检测）
+ *   stuckCheckInterval       - 检测间隔
+ *   stuckThreshold           - 卡住判定阈值
+ *
+ * 【说明】
+ *   - 用 CharacterController 移动
+ *   - 自动在路径点之间行走，有随机速度和停顿
+ *   - 血量低时自动给自己和附近玩家加血
+ *   - 到达终点后触发 OnArrived 事件
+ */
 using UnityEngine;
 
 [RequireComponent(typeof(Health))]
@@ -486,3 +547,4 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
         Gizmos.DrawWireSphere(origin + fwd, obstacleCheckRadius);
     }
 }
+

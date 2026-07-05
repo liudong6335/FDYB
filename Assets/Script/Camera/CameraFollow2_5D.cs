@@ -1,3 +1,29 @@
+﻿/*
+ * ============================================================
+ *  CameraFollow2_5D  -  2.5D相机跟随
+ * ============================================================
+ *
+ * 【功能】
+ *   相机平滑跟随目标（玩家），支持 2.5D 视角偏移、
+ *   死区（小范围不跟）、边界限制、震屏效果。
+ *
+ * 【挂载对象】
+ *   主摄像机（Main Camera）
+ *
+ * 【可调节参数】
+ *   target          - 跟随目标（拖入玩家对象）
+ *   offset          - 相机相对目标的偏移量 (x, y, z)
+ *   smoothTime     - 跟随平滑速度（越小越灵敏）
+ *   useDeadZone    - 是否启用死区（小范围移动不跟）
+ *   deadZoneSize   - 死区范围 (x, y)
+ *   useBoundary    - 是否启用边界限制
+ *   boundaryMin/Max- 相机可移动的矩形边界
+ *   defaultShakeDecay - 震屏衰减速度
+ *
+ * 【外部调用】
+ *   Shake(intensity, decay) - 触发震屏效果
+ *   SetTarget(Transform)    - 动态切换跟随目标
+ */
 using UnityEngine;
 using System.Collections;
 

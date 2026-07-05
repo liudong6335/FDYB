@@ -165,7 +165,7 @@ public class TreasureChest : MonoBehaviour
         {
             case ChestType.Wooden:
                 if (roll < 0.3f)
-                    items.Add(new GameItem { itemType = ItemType.Consumable, itemId = "health_potion_1", itemName = "初级生命药水", description = "50HP/秒，持续4秒, healAmount = 200f });
+                    items.Add(new GameItem { itemType = ItemType.Consumable, itemId = "health_potion_1", itemName = "初级生命药水", description = "50HP/秒，持续4秒", healAmount = 200f });
                 else if (roll < 0.6f)
                     items.Add(new GameItem { itemType = ItemType.Currency, itemId = "gold", itemName = "金币", goldAmount = 50 });
                 else
@@ -178,7 +178,7 @@ public class TreasureChest : MonoBehaviour
                 else if (roll < 0.6f)
                     items.Add(GenerateRandomEquipment(true));
                 else if (roll < 0.8f)
-                    items.Add(new GameItem { itemType = ItemType.Consumable, itemId = "health_potion_1", itemName = "初级生命药水", description = "50HP/秒，持续4秒, healAmount = 200f });
+                    items.Add(new GameItem { itemType = ItemType.Consumable, itemId = "health_potion_1", itemName = "初级生命药水", description = "50HP/秒，持续4秒", healAmount = 200f });
                 else
                     items.Add(new GameItem { itemType = ItemType.Currency, itemId = "gold", itemName = "金币", goldAmount = 100 });
 

@@ -183,7 +183,7 @@ public class TreasureChest : MonoBehaviour
                     items.Add(new GameItem { itemType = ItemType.Currency, itemId = "gold", itemName = "金币", goldAmount = 100 });
 
                 if (Random.value < 0.1f)
-                    items.Add(new GameItem { itemType = ItemType.Equipment, itemId = "weapon_gem_1", itemName = "普通武器宝石, description = "DPS+40", slotType = EquipmentSlotType.WeaponGem, rarity = ItemRarity.Common, statType = StatType.DPS, statValue = 40 });
+                    items.Add(new GameItem { itemType = ItemType.Equipment, itemId = "weapon_gem_1", itemName = "普通武器宝石", description = "DPS+40", slotType = EquipmentSlotType.WeaponGem, rarity = ItemRarity.Common, statType = StatType.DPS, statValue = 40 });
                 break;
         }
 

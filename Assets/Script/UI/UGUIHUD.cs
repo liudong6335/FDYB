@@ -45,6 +45,8 @@ public class UGUIHUD : MonoBehaviour
     [SerializeField] private PlayerMove player2;
 
     [Header("Colors")]
+    [Header("Icons")]
+    [SerializeField] private Sprite speedBoostIcon;
     [SerializeField] private Color panelBgColor = new Color(0.08f, 0.08f, 0.08f, 0.85f);
     [SerializeField] private Color barBgColor = new Color(0.15f, 0.15f, 0.15f, 1f);
     [SerializeField] private Color hpHighColor = Color.green;
@@ -198,6 +200,9 @@ public class UGUIHUD : MonoBehaviour
         var title = MakeText(name + "Title", panel.transform, "=== " + label + " ===", 16, FontStyle.Bold, TextAnchor.UpperLeft, Color.yellow);
         SetAnchor(title.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(10f, -8f), new Vector2(220f, 22f));
 
+        var boostIcon = MakeImage(name + "BoostIcon", panel.transform, Color.white);
+        SetAnchor(boostIcon.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(10f, -80f), new Vector2(18f, 18f));
+
         // Stats
         var statsLabel = MakeText(name + "Stats", panel.transform, "ATK: 100  Range: 8m", 12, FontStyle.Normal, TextAnchor.UpperLeft, Color.white);
         SetAnchor(statsLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(10f, -38f), new Vector2(220f, 18f));
@@ -227,6 +232,7 @@ public class UGUIHUD : MonoBehaviour
             p2SpeedLabel = speedLabel;
             p2CdLabel = cdLabel;
             p2EquipLabel = equipLabel;
+            p2BoostIcon = boostIcon;
         }
         else
         {
@@ -234,6 +240,7 @@ public class UGUIHUD : MonoBehaviour
             p1SpeedLabel = speedLabel;
             p1CdLabel = cdLabel;
             p1EquipLabel = equipLabel;
+            p1BoostIcon = boostIcon;
         }
 
         return panel;
@@ -246,6 +253,16 @@ public class UGUIHUD : MonoBehaviour
 
         statsLabel.text = $"ATK: {player.EffectiveDamage:F0}  Range: {player.EffectiveAttackRange:F0}m";
         speedLabel.text = $"Speed: {(player.IsSpeedBoosted ? "!!BOOSTED" : "Normal")}";
+
+        if (p2BoostIcon != null) {
+            p2BoostIcon.sprite = speedBoostIcon;
+            p2BoostIcon.color = player.IsSpeedBoosted ? Color.cyan : new Color(1f, 1f, 1f, 0.35f);
+        }
+
+        if (p1BoostIcon != null) {
+            p1BoostIcon.sprite = speedBoostIcon;
+            p1BoostIcon.color = player.IsSpeedBoosted ? Color.cyan : new Color(1f, 1f, 1f, 0.35f);
+        }
 
         float cdRemain = player.SpeedBoostCooldownRemaining;
         cdLabel.text = cdRemain > 0 ? $"Q-Boost CD: {cdRemain:F0}s" : "Q-Boost: Ready";

@@ -73,6 +73,7 @@ public class UGUIHUD : MonoBehaviour
     private Text p1SpeedLabel, p2SpeedLabel;
     private Text p1CdLabel, p2CdLabel;
     private Text p1EquipLabel, p2EquipLabel;
+    private Image p1BoostIcon, p2BoostIcon;
 
     // Shop
     private GameObject shopPanel;

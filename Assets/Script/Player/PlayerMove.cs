@@ -38,7 +38,7 @@ using UnityEngine.EventSystems;
 
 [RequireComponent(typeof(PlayerHealth))]
 [RequireComponent(typeof(PlayerCombat))]
-public class PlayerMove : MonoBehaviour
+public class PlayerMove : MonoBehaviour, IDamageable
 {
     #region Serialized Fields
 

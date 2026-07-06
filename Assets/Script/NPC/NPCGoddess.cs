@@ -122,6 +122,7 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
     [SerializeField] private string moveSpeedParam = "MoveSpeed";
     [SerializeField] private string healParam = "Heal";
     [SerializeField] private string deathParam = "Death";
+    [SerializeField] private string hitParam = "Hit";
     #endregion
 
     #region Private State
@@ -423,6 +424,7 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
     {
         if (IsDead || hasArrived) return;
         health.TakeDamage(dmg);
+        SafeSetTrigger(hitParam);
         damageSlowTimer = damageSlowDuration;
     }
 

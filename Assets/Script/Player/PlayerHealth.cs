@@ -75,7 +75,7 @@ public class PlayerHealth : MonoBehaviour, IHealthProvider
 
     public void TakeDamage(float dmg)
     {
-        if (animator != null) { animator.ResetTrigger(hitParam); animator.SetTrigger(hitParam); }
+        if (dmg > 0 && animator != null) { animator.ResetTrigger(hitParam); animator.SetTrigger(hitParam); }
         if (health != null) health.TakeDamage(dmg);
     }
 

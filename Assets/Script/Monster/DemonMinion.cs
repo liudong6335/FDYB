@@ -65,6 +65,13 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     [SerializeField] private float disengageDistance = 10f;
     [SerializeField] private float altarDeathDelay = 30f;
 
+    [Header("Patrol")]
+    [SerializeField] private float patrolRadius = 8f;
+    [SerializeField] private float patrolWaitTime = 3f;
+    private Vector3 patrolTarget;
+    private float patrolWaitTimer;
+    private bool isWaitingAtPatrol;
+
     [Header("Animation")]
     [SerializeField] private Animator animator;
     [SerializeField] private string isMovingParam = "IsMoving";
@@ -129,6 +136,7 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
         cachedRenderers = GetComponentsInChildren<Renderer>();
         if (healthBar == null) healthBar = GetComponentInChildren<UGUIFloatingHealthBar>();
         if (healthBar != null) healthBar.SetProvider(this);
+        patrolTarget = transform.position;
     }
 
     public void Initialize(int level, NPCGoddess npc)
@@ -192,6 +200,7 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
         if (!isDead && initialized) aliveCount--;
     }
 
+
     private void Update()
     {
         if (attackLockTimer > 0f) attackLockTimer -= Time.deltaTime;
@@ -200,7 +209,7 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
             UpdateAnimation();
             return;
         }
-        if (targetNPC == null || targetNPC.IsDead || targetNPC.HasArrived) return;
+        if (targetNPC == null || targetNPC.IsDead) return;
 
         // Periodic player cache refresh
         playerCacheTimer -= Time.deltaTime;
@@ -226,13 +235,21 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
         }
         else
         {
-            float sqrDistToNPC = SqrDistanceTo(targetNPC.transform.position);
-            if (sqrDistToNPC > sqrAttackRange)
-                if (attackLockTimer <= 0f) MoveToward(targetNPC.transform.position);
+            if (targetNPC != null && targetNPC.HasArrived)
+            {
+                UpdatePatrol();
+            }
+            else
+            {
+                float sqrDistToNPC = SqrDistanceTo(targetNPC.transform.position);
+                if (sqrDistToNPC > sqrAttackRange)
+                    if (attackLockTimer <= 0f) MoveToward(targetNPC.transform.position);
+            }
         }
 
         UpdateAnimation();
     }
+
 
     private void DetermineTarget()
     {
@@ -280,10 +297,11 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
             }
         }
 
-        if (targetNPC != null)
-            SetTarget(targetNPC.transform);
+            if (targetNPC != null && !targetNPC.HasArrived)
+                SetTarget(targetNPC.transform);
+            else if (targetNPC != null && currentTarget == targetNPC.transform)
+                currentTarget = null;
     }
-
     private void SetTarget(Transform newTarget)
     {
         if (currentTarget == newTarget) return;
@@ -350,6 +368,15 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
         if (isDead) return;
         isDead = true;
         aliveCount--;
+
+        // If NPC arrived, disappear immediately with no death animation
+        if (targetNPC != null && targetNPC.HasArrived)
+        {
+            OnDeath?.Invoke(this);
+            Destroy(gameObject);
+            return;
+        }
+
         // Stay in place with idle animation 閿?no Destroy
         if (animator != null)
         {
@@ -473,6 +500,32 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     public bool IsDormant
     {
         get { return isDead && animator != null && !animator.enabled; }
+    }
+
+    private void UpdatePatrol()
+    {
+        if (isWaitingAtPatrol)
+        {
+            patrolWaitTimer -= Time.deltaTime;
+            if (patrolWaitTimer <= 0f)
+            {
+                isWaitingAtPatrol = false;
+                Vector2 rand = Random.insideUnitCircle * patrolRadius;
+                    patrolTarget = transform.position + new Vector3(rand.x, 0f, rand.y);
+            }
+            return;
+        }
+
+        float dist = Vector3.Distance(transform.position, patrolTarget);
+        if (dist <= 1f)
+        {
+            isWaitingAtPatrol = true;
+            patrolWaitTimer = patrolWaitTime + Random.Range(0f, 2f);
+        }
+        else
+        {
+            MoveToward(patrolTarget);
+        }
     }
 
     private void UpdateAnimation()

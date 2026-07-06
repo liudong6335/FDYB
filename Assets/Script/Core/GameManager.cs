@@ -54,7 +54,9 @@ public class GameManager : MonoBehaviour
 
     [Header("Spawn")]
     [SerializeField] private GameObject demonMinionPrefab;
-    [SerializeField] private float demonSpawnInterval = 30f;
+    [Header("Spawn")]
+    [SerializeField] private float demonSpawnIntervalMin = 20f;
+    [SerializeField] private float demonSpawnIntervalMax = 40f;
     [SerializeField] private int maxDemonMinions = 4;
     [SerializeField] private int maxDemonLevel = 3;
     [SerializeField] private float demonReviveTime = 10f;
@@ -124,7 +126,7 @@ public class GameManager : MonoBehaviour
             if (players.Length > 1 && player2 == null) player2 = players[1];
         }
         if (npcGoddess != null)
-            npcGoddess.OnArrived += HandleNPCArrived;
+        npcGoddess.OnArrived += HandleNPCArrived;
         StartEscortPhase();
     }
 
@@ -152,8 +154,20 @@ public class GameManager : MonoBehaviour
             if (demonActivateTimer <= 0f && activeMinions.Count < maxDemonMinions)
             {
                 ActivateNextDormantDemon();
-                demonActivateTimer = Random.Range(10f, 15f); // test
-            }
+                int aliveCount = activeMinions.Count;
+                float nextInterval = demonSpawnIntervalMin;
+                if (aliveCount < 1)
+                    nextInterval = demonSpawnIntervalMin;
+                else if (aliveCount >= maxDemonMinions - 1)
+                    nextInterval = demonSpawnIntervalMax;
+                else
+                {
+                float segmentCount = maxDemonMinions - 1;
+                float segmentSize = (demonSpawnIntervalMax - demonSpawnIntervalMin) / segmentCount;
+                float low = demonSpawnIntervalMin + (aliveCount - 1) * segmentSize;
+                }
+                demonActivateTimer = nextInterval;
+        }
         }
 
         // Boss awakening timer
@@ -207,12 +221,13 @@ public class GameManager : MonoBehaviour
     /// </summary>
     private void HandleNPCArrived()
     {
-        foreach (var m in activeMinions.ToArray())
+        var allDemons = FindObjectsByType<DemonMinion>(FindObjectsSortMode.None);
+        foreach (var m in allDemons)
         {
-            m.StartAltarDeathCountdown();
+            if (m.IsDead)
+                Destroy(m.gameObject);
         }
     }
-
     private void SpawnChests()
     {
         if (npcGoddess == null) return;
@@ -314,7 +329,7 @@ public class GameManager : MonoBehaviour
             m.SetDormant();
         }
 
-        demonActivateTimer = 5f; // test
+        demonActivateTimer = Random.Range(demonSpawnIntervalMin, demonSpawnIntervalMax);
 
         if (npcGoddess != null) npcGoddess.StartWalking();
         SetPhase(GamePhase.Escort);

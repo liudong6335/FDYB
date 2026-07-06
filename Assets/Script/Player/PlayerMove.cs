@@ -68,6 +68,7 @@ public class PlayerMove : MonoBehaviour, IDamageable
     private CharacterController cc;
     private Camera mainCamera;
     private Vector3 moveDestination;
+    private bool isPlayerAI;
     private bool hasMoveCommand;
 
     // Speed boost
@@ -122,8 +123,11 @@ public class PlayerMove : MonoBehaviour, IDamageable
     {
         if (playerHealth != null && playerHealth.CurrentHealth <= 0f) return;
 
-        HandleMouseInput();
-        HandleKeyboardMovement();
+        if (!isPlayerAI)
+        {
+            HandleMouseInput();
+            HandleKeyboardMovement();
+        }
         HandleSpeedBoost();
         playerCombat.UpdateCombat();
         MoveTowardDestination();
@@ -199,6 +203,29 @@ public class PlayerMove : MonoBehaviour, IDamageable
     private float GetEffectiveSpeed()
     {
         return moveSpeed * SpeedMultiplier * (isSpeedBoosted ? speedBoostMultiplier : 1f);
+    }
+
+    #endregion
+
+    #region AI Control
+
+    /// <summary>Enable/disable AI control. AI mode skips mouse/keyboard input.</summary>
+    public void SetPlayerAI(bool value) { isPlayerAI = value; }
+
+    /// <summary>Set a move-to destination (clears any combat target).</summary>
+    public void SetMoveDestination(Vector3 dest)
+    {
+        if (playerCombat != null) playerCombat.ClearTarget();
+        moveDestination = dest;
+        hasMoveCommand = true;
+    }
+
+    /// <summary>Stop all movement and clear combat target.</summary>
+    public void StopMoving()
+    {
+        if (playerCombat != null) playerCombat.ClearTarget();
+        hasMoveCommand = false;
+        moveDestination = transform.position;
     }
 
     #endregion

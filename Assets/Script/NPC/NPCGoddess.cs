@@ -42,8 +42,8 @@
  *   healCooldown             - 治疗冷却时间
  *   healCastTime             - 施法时间
  *   healRange                - 治疗范围
- *   selfHealThreshold        - 自己血量低于此值开始治疗
- *   playerHealThreshold      - 玩家血量低于此值治疗玩家
+ *   selfHealThresholdPercent  - 自己血量低于此百分比(0~1)开始治疗
+ *   playerHealThresholdPercent - 玩家血量低于此百分比(0~1)治疗玩家
  *
  *   （受伤减速）
  *   damageSlowMultiplier     - 受伤后移动速度倍率
@@ -105,8 +105,8 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
     [SerializeField] private float healCooldown = 15f;
     [SerializeField] private float healCastTime = 3f;
     [SerializeField] private float healRange = 5f;
-    [SerializeField] private float selfHealThreshold = 400f;
-    [SerializeField] private float playerHealThreshold = 600f;
+    [SerializeField] [Range(0f, 1f)] private float selfHealThresholdPercent = 0.6f;
+    [SerializeField] [Range(0f, 1f)] private float playerHealThresholdPercent = 0.5f;
 
     [Header("Damage")]
     [SerializeField] private float damageSlowMultiplier = 0.4f;
@@ -163,6 +163,8 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
     public float HealCooldown { get { return healCooldown; } }
     public float NextHealTime { get { return nextHealTime; } }
     public float CurrentMoveSpeed { get { return currentMoveSpeed; } }
+    public int CurrentWaypointIndex { get { return currentWaypointIndex; } }
+    public WaypointPath WaypointPath { get { return waypointPath; } }
 
     #region Public Events / Properties
     public System.Action OnArrived;
@@ -309,14 +311,14 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
         if (isHealing || Time.time < nextHealTime) return;
 
         // Self-heal: own HP < 400
-        if (CurrentHealth < selfHealThreshold)
+        if (HealthPercent < selfHealThresholdPercent)
         {
             StartHealCast();
             return;
         }
 
         // Heal player: own HP >= 400, find players with HP < 600
-        if (CurrentHealth >= selfHealThreshold && cachedPlayers != null)
+        if (HealthPercent >= selfHealThresholdPercent && cachedPlayers != null)
         {
             PlayerMove bestTarget = null;
             float bestDist = float.MaxValue;
@@ -324,7 +326,7 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
             foreach (var p in cachedPlayers)
             {
                 if (p == null || p.CurrentHealth <= 0f) continue;
-                if (p.CurrentHealth >= playerHealThreshold) continue;
+                if (p.HealthPercent >= playerHealThresholdPercent) continue;
                 if (p.HealthPercent >= 1f) continue;
 
                 float dist = FlatDistanceTo(p.transform.position);

@@ -238,9 +238,7 @@ public class GameManager : MonoBehaviour
         {
             if (woodenChestPrefab != null)
             {
-                float minD = i == 0 ? 0f : 20f;
-                float maxD = i == 0 ? 20f : 30f;
-                Vector3 pos = GetChestSpawnPos(minD, maxD);
+                Vector3 pos = GetChestSpawnPosOnPath(5f);
                 Instantiate(woodenChestPrefab, pos, Quaternion.identity);
                 woodenChestsSpawned++;
             }
@@ -249,12 +247,25 @@ public class GameManager : MonoBehaviour
         // Copper chest at 3 minutes
         if (gameTimer >= copperChestSpawnTime && !copperChestSpawned && copperChestPrefab != null)
         {
-            Vector3 pos = GetChestSpawnPos(30f, 40f);
+            Vector3 pos = GetChestSpawnPosOnPath(8f);
             Instantiate(copperChestPrefab, pos, Quaternion.identity);
             copperChestSpawned = true;
         }
     }
 
+    private Vector3 GetChestSpawnPosOnPath(float offsetRadius)
+    {
+        if (npcGoddess == null || npcGoddess.WaypointPath == null || npcGoddess.WaypointPath.WaypointCount == 0)
+            return GetChestSpawnPos(0f, 20f);
+
+        int nextIndex = npcGoddess.CurrentWaypointIndex;
+        if (nextIndex >= npcGoddess.WaypointPath.WaypointCount)
+            nextIndex = npcGoddess.WaypointPath.WaypointCount - 1;
+
+        Vector3 wpPos = npcGoddess.WaypointPath.GetWaypoint(nextIndex);
+        Vector2 offset = Random.insideUnitCircle * offsetRadius;
+        return wpPos + new Vector3(offset.x, 0f, offset.y);
+    }
     private Vector3 GetChestSpawnPos(float minDist, float maxDist)
     {
         Vector3 npcPos = npcGoddess.transform.position;

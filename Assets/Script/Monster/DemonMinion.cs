@@ -369,16 +369,16 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
         isDead = true;
         aliveCount--;
 
-        // If NPC arrived, disappear immediately with no death animation
-        if (targetNPC != null && targetNPC.HasArrived)
-        {
-            OnDeath?.Invoke(this);
-            Destroy(gameObject);
-            return;
-        }
-
-        // Stay in place with idle animation 閿?no Destroy
+        // Play death animation
         if (animator != null)
+        {
+            animator.ResetTrigger(deathParam); animator.SetTrigger(deathParam);
+            animator.SetBool(isMovingParam, false);
+        }
+        OnDeath?.Invoke(this);
+
+        // Disappear after 1 second (allow death animation to play)
+        Destroy(gameObject, 1f);
         {
             animator.ResetTrigger(deathParam); animator.SetTrigger(deathParam);
             animator.SetBool(isMovingParam, false);

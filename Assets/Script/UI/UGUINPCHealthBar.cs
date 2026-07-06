@@ -97,6 +97,15 @@ public class UGUINPCHealthBar : MonoBehaviour
     {
         if (sharedCanvas != null) return;
 
+        // Reuse existing HealthBarsCanvas if one already exists
+        var existing = GameObject.Find("HealthBarsCanvas");
+        if (existing != null)
+        {
+            sharedCanvas = existing.GetComponent<Canvas>();
+            sharedCanvasRect = existing.GetComponent<RectTransform>();
+            return;
+        }
+
         var go = new GameObject("HealthBarsCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
         DontDestroyOnLoad(go);
         sharedCanvas = go.GetComponent<Canvas>();

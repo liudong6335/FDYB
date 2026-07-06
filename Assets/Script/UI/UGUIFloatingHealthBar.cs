@@ -87,6 +87,12 @@ public class UGUIFloatingHealthBar : MonoBehaviour
 
     private void Awake()
     {
+        // Skip if NPC health bar already handles this object
+        if (GetComponent<UGUINPCHealthBar>() != null)
+        {
+            enabled = false;
+            return;
+        }
         cachedCamera = Camera.main;
 
         // Resolve provider
@@ -237,6 +243,18 @@ public class UGUIFloatingHealthBar : MonoBehaviour
     {
         if (panelRect != null)
             Destroy(panelRect.gameObject);
+    }
+
+    private void OnDisable()
+    {
+        if (panelRect != null)
+            panelRect.gameObject.SetActive(false);
+    }
+
+    private void OnEnable()
+    {
+        if (panelRect != null)
+            panelRect.gameObject.SetActive(true);
     }
 
     public void SetProvider(MonoBehaviour p)

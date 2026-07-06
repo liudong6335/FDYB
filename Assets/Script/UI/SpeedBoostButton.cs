@@ -19,9 +19,7 @@ public class SpeedBoostButton : MonoBehaviour
     private void OnClick()
     {
         if (player == null || player.IsDead) return;
-        var method = typeof(PlayerMove).GetMethod("ActivateSpeedBoost",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        if (method != null) method.Invoke(player, null);
+        player.ActivateSpeedBoost();
     }
 
     private void Update()
@@ -30,3 +28,4 @@ public class SpeedBoostButton : MonoBehaviour
         GetComponent<Button>().interactable = player.SpeedBoostCooldownRemaining <= 0f && !player.IsDead;
     }
 }
+

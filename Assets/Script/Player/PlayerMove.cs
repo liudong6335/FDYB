@@ -84,7 +84,7 @@ public class PlayerMove : MonoBehaviour
     public float SpeedBoostCooldownRemaining { get { return Mathf.Max(0f, speedBoostNextTime - Time.time); } }
     public float SpeedBoostCooldownTotal { get { return speedBoostCooldown; } }
 
-    // 锟斤拷锟斤拷 Pass-through to PlayerHealth (backward compat for GameManager / NPCGoddess) 锟斤拷锟斤拷
+    // 透传  Pass-through to PlayerHealth (backward compat for GameManager / NPCGoddess) 透传
     public float CurrentHealth { get { return playerHealth != null ? playerHealth.CurrentHealth : 0f; } }
     public float HealthPercent { get { return playerHealth != null ? playerHealth.HealthPercent : 1f; } }
     public bool IsDead { get { return playerHealth == null || playerHealth.CurrentHealth <= 0f; } }
@@ -139,7 +139,7 @@ public class PlayerMove : MonoBehaviour
 
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
 
-        // Click enemy 锟斤拷 engage combat
+        // Click enemy → engage combat
         if (playerCombat.EnemyLayerMask.value != 0 &&
             Physics.Raycast(ray, out RaycastHit enemyHit, 500f, playerCombat.EnemyLayerMask, QueryTriggerInteraction.Collide))
         {
@@ -150,7 +150,7 @@ public class PlayerMove : MonoBehaviour
             return;
         }
 
-        // Click ground 锟斤拷 move
+        // Click ground → move
         if (Physics.Raycast(ray, out RaycastHit groundHit, 500f, groundLayer, QueryTriggerInteraction.Ignore))
         {
             playerCombat.ClearTarget();
@@ -189,7 +189,7 @@ public class PlayerMove : MonoBehaviour
             isSpeedBoosted = false;
     }
 
-    private void ActivateSpeedBoost()
+    public void ActivateSpeedBoost()
     {
         isSpeedBoosted = true;
         speedBoostEndTime = Time.time + speedBoostDuration;

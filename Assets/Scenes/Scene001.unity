@@ -2165,6 +2165,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 04a36210f31f8ac4ead6a0e3e6ce6218, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UGUIFloatingHealthBar
+--- !u!114 &1819312583
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 461896891}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c5924a20b54d4942a27e6931de217ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player: {fileID: 0}
+  autoFindPlayer: 1
 --- !u!1 &1956910988
 GameObject:
   m_ObjectHideFlags: 0
@@ -2418,6 +2432,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1124784509328440373, guid: 8c473a16ab6466746adbbbd41b8bff25, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8563500858200346095, guid: 8c473a16ab6466746adbbbd41b8bff25, type: 3}
       propertyPath: m_Name
       value: Player01
@@ -2582,7 +2600,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6952509770047980630, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7725809026441993964, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
       propertyPath: m_LocalPosition.x
@@ -3093,17 +3111,3 @@ SceneRoots:
   - {fileID: 2086034154}
   - {fileID: 1956910992}
   - {fileID: 452427202}
---- !u!114 &1819312583
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1819312578}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3c5924a20b54d4942a27e6931de217ca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  player: {fileID: 0}
-  autoFindPlayer: 1

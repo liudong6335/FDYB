@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class FleeAction : IAction
 {
@@ -14,23 +14,24 @@ public class FleeAction : IAction
         if (ctx.nearbyEnemyCount >= 2) score += Mathf.Min((ctx.nearbyEnemyCount - 1) / 3f, 1f) * 0.2f;
         score -= card.aggression * 0.15f;
 
-        // 自保：更想逃跑
+        // 鑷繚锛氭洿鎯抽€冭窇
         if (card.selfPreservation > 0.5f)
             score += card.selfPreservation * 0.2f;
 
-        // 求胜：想赢的人不会轻易逃
-        if (card.victoryFocus > 0.5f && ctx.nearbyEnemyCount > 0)
+        // 姹傝儨锛氭兂璧㈢殑浜轰笉浼氳交鏄撻€?        if (card.victoryFocus > 0.5f && ctx.nearbyEnemyCount > 0)
             score -= card.victoryFocus * 0.1f;
 
         return Mathf.Clamp01(score);
     }
 
-    public void Execute(PlayerMove player, PlayerCombat combat, GameContext ctx, CharacterCard card)
+    public void Execute(GameObject owner, GameContext ctx, CharacterCard card)
     {
+        var player = owner.GetComponent<PlayerMove>();
+        var combat = owner.GetComponent<PlayerCombat>();
         if (player == null || combat == null) return;
         combat.ClearTarget();
 
-        // 优先逃往NPC，NPC不在则逃往P1
+        // 浼樺厛閫冨線NPC锛孨PC涓嶅湪鍒欓€冨線P1
         var npc = Object.FindFirstObjectByType<NPCGoddess>();
         if (npc != null && !npc.IsDead)
             player.SetMoveDestination(npc.transform.position);
@@ -38,3 +39,4 @@ public class FleeAction : IAction
             player.SetMoveDestination(ctx.player1Target.position);
     }
 }
+

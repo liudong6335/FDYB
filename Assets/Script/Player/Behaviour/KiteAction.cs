@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class KiteAction : IAction
 {
@@ -20,15 +20,17 @@ public class KiteAction : IAction
 
         score += card.aggression * (1f - card.caution) * 0.2f;
 
-        // 求胜：护送阶段积极拉怪保护NPC
+        // 姹傝儨锛氭姢閫侀樁娈电Н鏋佹媺鎬繚鎶PC
         if (card.victoryFocus > 0.5f && ctx.npcExists && ctx.npcAlive && ctx.npcIsWalking)
             score += card.victoryFocus * 0.25f;
 
         return Mathf.Clamp01(score);
     }
 
-    public void Execute(PlayerMove player, PlayerCombat combat, GameContext ctx, CharacterCard card)
+    public void Execute(GameObject owner, GameContext ctx, CharacterCard card)
     {
+        var player = owner.GetComponent<PlayerMove>();
+        var combat = owner.GetComponent<PlayerCombat>();
         if (player == null || combat == null) return;
         var npc = Object.FindFirstObjectByType<NPCGoddess>();
         if (npc == null || npc.IsDead) return;
@@ -58,3 +60,4 @@ public class KiteAction : IAction
         }
     }
 }
+

@@ -1,15 +1,16 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Behaviour model for Player-controlled or AI-controlled player characters.
+/// Uses PlayerMove, PlayerCombat, PlayerHealth for movement and combat.
+/// </summary>
 [RequireComponent(typeof(PlayerMove))]
 [RequireComponent(typeof(PlayerCombat))]
 [RequireComponent(typeof(PlayerHealth))]
-public class BehaviourModel : MonoBehaviour
+public class PlayerBehaviourModel : BehaviourModelBase
 {
-    [Header("Character")]
-    [SerializeField] private CharacterCard card;
-
-    [Header("Behaviours — toggle each action on/off per character")]
+    [Header("Behaviours — toggle each action on/off")]
     [SerializeField] private bool enableAttack = true;
     [SerializeField] private bool enableKite = true;
     [SerializeField] private bool enableHeal = true;
@@ -17,28 +18,24 @@ public class BehaviourModel : MonoBehaviour
     [SerializeField] private bool enableFlee = true;
     [SerializeField] private bool enableFollowNPC = true;
 
-    [Header("Tick")]
-    [SerializeField] private float tickInterval = 0.3f;
-
     private PlayerMove player;
     private PlayerCombat combat;
     private PlayerHealth health;
-    private List<IAction> actions = new List<IAction>();
-    private float nextTickTime;
 
     private NPCGoddess cachedNPC;
     private PlayerMove cachedPlayer1;
 
-    // Debug data — populated each tick, read by BehaviourDebugger
-    private List<TickResult> lastTickScores = new List<TickResult>();
-
-    private void Awake()
+    protected override void Awake()
     {
         player = GetComponent<PlayerMove>();
         combat = GetComponent<PlayerCombat>();
         health = GetComponent<PlayerHealth>();
         player.SetPlayerAI(true);
+        base.Awake();
+    }
 
+    protected override void RegisterActions()
+    {
         if (enableAttack) actions.Add(new AttackAction());
         if (enableKite)   actions.Add(new KiteAction());
         if (enableHeal)   actions.Add(new HealAction());
@@ -47,38 +44,12 @@ public class BehaviourModel : MonoBehaviour
         if (enableFollowNPC) actions.Add(new FollowNPCAction());
     }
 
-    private void Update()
+    protected override bool CanTick()
     {
-        if (player == null || player.IsDead) return;
-        if (Time.time < nextTickTime) return;
-        nextTickTime = Time.time + tickInterval;
-
-        if (cachedNPC == null || cachedNPC.IsDead)
-            cachedNPC = FindFirstObjectByType<NPCGoddess>();
-
-        GameContext ctx = BuildContext();
-
-        float bestScore = float.MinValue;
-        IAction bestAction = null;
-
-        lastTickScores.Clear();
-        foreach (var action in actions)
-        {
-            float score = action.Evaluate(card, ctx);
-            lastTickScores.Add(new TickResult { actionName = action.Name, score = score });
-            if (score > bestScore) { bestScore = score; bestAction = action; }
-        }
-        // Mark winner
-        foreach (var t in lastTickScores)
-            t.isWinner = t.score >= bestScore;
-
-        bestAction?.Execute(player, combat, ctx, card);
+        return player != null && !player.IsDead;
     }
 
-    public List<TickResult> GetLastTickData() => lastTickScores;
-    public string GetCardName() => card != null ? card.characterName : "Unset";
-
-    private GameContext BuildContext()
+    protected override GameContext BuildContext()
     {
         var ctx = new GameContext();
         ctx.healthPercent = health != null ? health.HealthPercent : 1f;
@@ -89,7 +60,6 @@ public class BehaviourModel : MonoBehaviour
         ctx.nearbyEnemyCount = 0;
         ctx.totalEnemyHealth = 0f;
         float nearestSqr = float.MaxValue;
-
         foreach (var e in ctx.allDemons)
         {
             if (e == null || e.IsDead) continue;
@@ -105,6 +75,8 @@ public class BehaviourModel : MonoBehaviour
             }
         }
 
+        if (cachedNPC == null || cachedNPC.IsDead)
+            cachedNPC = FindFirstObjectByType<NPCGoddess>();
         if (cachedNPC != null && !cachedNPC.IsDead)
         {
             ctx.npcExists = true;
@@ -132,6 +104,7 @@ public class BehaviourModel : MonoBehaviour
         threat += (1f - ctx.healthPercent) * 0.3f;
         if (ctx.totalEnemyHealth > ctx.healthAbsolute && ctx.healthAbsolute > 0f) threat += 0.2f;
         ctx.threatLevel = Mathf.Clamp01(threat);
+
         ctx.potionCount = 0;
         var inv = InventoryManager.Instance;
         if (inv != null)

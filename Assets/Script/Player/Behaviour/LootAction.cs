@@ -40,8 +40,10 @@ public class LootAction : IAction
         return Mathf.Clamp01(score);
     }
 
-    public void Execute(PlayerMove player, PlayerCombat combat, GameContext ctx, CharacterCard card)
+    public void Execute(GameObject owner, GameContext ctx, CharacterCard card)
     {
+        var player = owner.GetComponent<PlayerMove>();
+        var combat = owner.GetComponent<PlayerCombat>();
         if (player == null || combat == null) return;
         var chests = Object.FindObjectsByType<TreasureChest>(FindObjectsSortMode.None);
         TreasureChest nearestChest = null;
@@ -70,4 +72,5 @@ public class LootAction : IAction
         }
     }
 }
+
 

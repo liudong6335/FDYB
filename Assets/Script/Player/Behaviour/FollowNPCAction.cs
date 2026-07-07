@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class FollowNPCAction : IAction
 {
@@ -16,15 +16,17 @@ public class FollowNPCAction : IAction
         score += card.supportiveness * 0.3f;
         score -= card.independence * 0.1f;
 
-        // 求胜：护送阶段紧贴NPC
+        // 姹傝儨锛氭姢閫侀樁娈电揣璐碞PC
         if (card.victoryFocus > 0.5f && ctx.npcExists && ctx.npcAlive && ctx.npcIsWalking)
             score += card.victoryFocus * 0.2f;
 
         return Mathf.Clamp01(score);
     }
 
-    public void Execute(PlayerMove player, PlayerCombat combat, GameContext ctx, CharacterCard card)
+    public void Execute(GameObject owner, GameContext ctx, CharacterCard card)
     {
+        var player = owner.GetComponent<PlayerMove>();
+        var combat = owner.GetComponent<PlayerCombat>();
         if (player == null || combat == null) return;
         combat.ClearTarget();
         var npc = Object.FindFirstObjectByType<NPCGoddess>();
@@ -32,3 +34,4 @@ public class FollowNPCAction : IAction
             player.SetMoveDestination(npc.transform.position + new Vector3(1.5f, 0f, 1.5f));
     }
 }
+

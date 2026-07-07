@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class AttackAction : IAction
 {
@@ -13,7 +13,7 @@ public class AttackAction : IAction
         score += Mathf.Min(ctx.nearbyEnemyCount / 5f, 1f) * 0.3f;
         score += Mathf.Max(0f, 1f - ctx.nearestEnemyDistance / card.aggroRange) * 0.2f;
 
-        // 求胜：清除威胁 = 推动胜利
+        // 姹傝儨锛氭竻闄ゅ▉鑳?= 鎺ㄥ姩鑳滃埄
         score += ctx.nearbyEnemyCount * 0.05f * card.victoryFocus;
 
         if (ctx.npcExists && ctx.npcAlive && ctx.npcIsWalking)
@@ -22,15 +22,16 @@ public class AttackAction : IAction
             score += npcDanger * card.supportiveness * 0.4f;
         }
 
-        // 自保：残血时减少攻击意愿
-        if (ctx.healthPercent < 0.35f)
+        // 鑷繚锛氭畫琛€鏃跺噺灏戞敾鍑绘剰鎰?        if (ctx.healthPercent < 0.35f)
             score -= (0.35f - ctx.healthPercent) * 2f * (card.caution + card.selfPreservation) * 0.5f;
 
         return Mathf.Clamp01(score);
     }
 
-    public void Execute(PlayerMove player, PlayerCombat combat, GameContext ctx, CharacterCard card)
+    public void Execute(GameObject owner, GameContext ctx, CharacterCard card)
     {
+        var player = owner.GetComponent<PlayerMove>();
+        var combat = owner.GetComponent<PlayerCombat>();
         if (combat == null || player == null) return;
 
         if (ctx.player1Target != null)
@@ -55,3 +56,4 @@ public class AttackAction : IAction
         }
     }
 }
+

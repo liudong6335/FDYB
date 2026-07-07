@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(PlayerMove))]
@@ -20,7 +20,6 @@ public class BehaviourModel : MonoBehaviour
 
     private NPCGoddess cachedNPC;
     private PlayerMove cachedPlayer1;
-    private static readonly float CacheInterval = 1f;
 
     private void Awake()
     {
@@ -125,3 +124,4 @@ public class BehaviourModel : MonoBehaviour
         return ctx;
     }
 }
+

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class HealAction : IAction
 {
@@ -16,7 +16,9 @@ public class HealAction : IAction
 
     public void Execute(PlayerMove player, PlayerCombat combat, GameContext ctx, CharacterCard card)
     {
+        if (player == null || combat == null) return;
         var inv = InventoryManager.Instance;
         if (inv != null) inv.UseConsumable("health_potion_1", player);
     }
 }
+

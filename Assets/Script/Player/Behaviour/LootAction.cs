@@ -1,20 +1,17 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
-/// 拾取宝箱动作 — 附近有未开启的宝箱时走过去开箱。
-/// 评分由贪婪度、周围敌情、血量共同驱动。
-/// </summary>
+/// 鎷惧彇瀹濈鍔ㄤ綔 鈥?闄勮繎鏈夋湭寮€鍚殑瀹濈鏃惰蛋杩囧幓寮€绠便€?/// 璇勫垎鐢辫椽濠害銆佸懆鍥存晫鎯呫€佽閲忓叡鍚岄┍鍔ㄣ€?/// </summary>
 public class LootAction : IAction
 {
     public string Name => "Loot";
 
     public float Evaluate(CharacterCard card, GameContext ctx)
     {
-        // 战斗紧迫时不捡
-        if (ctx.threatLevel > 0.4f) return 0f;
+        // 鎴樻枟绱ц揩鏃朵笉鎹?        if (ctx.threatLevel > 0.4f) return 0f;
         if (ctx.healthPercent < 0.4f) return 0f;
 
-        // 扫描附近宝箱
+        // 鎵弿闄勮繎瀹濈
         var chests = Object.FindObjectsByType<TreasureChest>(FindObjectsSortMode.None);
         int unopened = 0;
         float nearestDist = float.MaxValue;
@@ -32,13 +29,12 @@ public class LootAction : IAction
 
         if (unopened == 0) return 0f;
 
-        // 贪婪驱动
+        // 璐┆椹卞姩
         float score = card.greed * 0.5f;
 
-        // 越近越想捡
-        score += Mathf.Max(0f, 1f - nearestDist / card.lootRadius) * 0.3f;
+        // 瓒婅繎瓒婃兂鎹?        score += Mathf.Max(0f, 1f - nearestDist / card.lootRadius) * 0.3f;
 
-        // 谨慎的人会更犹豫
+        // 璋ㄦ厧鐨勪汉浼氭洿鐘硅鲍
         if (card.caution > 0.6f) score -= card.caution * 0.15f;
 
         return Mathf.Clamp01(score);
@@ -46,6 +42,7 @@ public class LootAction : IAction
 
     public void Execute(PlayerMove player, PlayerCombat combat, GameContext ctx, CharacterCard card)
     {
+        if (player == null || combat == null) return;
         var chests = Object.FindObjectsByType<TreasureChest>(FindObjectsSortMode.None);
         TreasureChest nearestChest = null;
         float nearestSqr = card.lootRadius * card.lootRadius;
@@ -61,7 +58,7 @@ public class LootAction : IAction
 
         if (nearestChest == null) return;
 
-        // 走到宝箱旁边
+        // 璧板埌瀹濈鏃佽竟
         if (nearestSqr > 2.5f * 2.5f)
         {
             combat.ClearTarget();
@@ -69,8 +66,8 @@ public class LootAction : IAction
         }
         else
         {
-            // 够近了，交互开箱
-            nearestChest.TryInteract();
+            // 澶熻繎浜嗭紝浜や簰寮€绠?            nearestChest.TryInteract();
         }
     }
 }
+

@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class FollowNPCAction : IAction
 {
@@ -18,9 +18,11 @@ public class FollowNPCAction : IAction
 
     public void Execute(PlayerMove player, PlayerCombat combat, GameContext ctx, CharacterCard card)
     {
+        if (player == null || combat == null) return;
         combat.ClearTarget();
         var npc = Object.FindFirstObjectByType<NPCGoddess>();
         if (npc != null)
             player.SetMoveDestination(npc.transform.position + new Vector3(1.5f, 0f, 1.5f));
     }
 }
+

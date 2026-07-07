@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class KiteAction : IAction
 {
@@ -21,6 +21,7 @@ public class KiteAction : IAction
 
     public void Execute(PlayerMove player, PlayerCombat combat, GameContext ctx, CharacterCard card)
     {
+        if (player == null || combat == null) return;
         var npc = Object.FindFirstObjectByType<NPCGoddess>();
         if (npc == null || npc.IsDead) return;
 
@@ -49,3 +50,4 @@ public class KiteAction : IAction
         }
     }
 }
+

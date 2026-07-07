@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class FleeAction : IAction
 {
@@ -17,9 +17,11 @@ public class FleeAction : IAction
 
     public void Execute(PlayerMove player, PlayerCombat combat, GameContext ctx, CharacterCard card)
     {
+        if (player == null || combat == null) return;
         combat.ClearTarget();
         var npc = Object.FindFirstObjectByType<NPCGoddess>();
         if (npc != null && !npc.IsDead)
             player.SetMoveDestination(npc.transform.position);
     }
 }
+

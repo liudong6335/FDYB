@@ -3,6 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// One-time scene fix: adds PlayerBehaviourModel to Player02/03.
+/// Handles the stub BehaviourModel class (from build cache) correctly.
 /// Accessible via Tools → Fix Scene Components
 /// </summary>
 public static class SceneFixer
@@ -18,6 +19,11 @@ public static class SceneFixer
 
             // Remove missing script slots
             GameObjectUtility.RemoveMonoBehavioursWithMissingScript(go);
+
+            // Destroy stub BehaviourModel components (inherits PlayerBehaviourModel but has no card data)
+            var stub = go.GetComponent<PlayerBehaviourModel>();
+            if (stub != null && stub.GetType().Name == "BehaviourModel")
+                Object.DestroyImmediate(stub);
 
             // Add PlayerBehaviourModel
             var bm = go.GetComponent<PlayerBehaviourModel>();
@@ -49,5 +55,9 @@ public static class SceneFixer
         }
 
         Debug.Log($"Scene fixed: {fixedCount} players updated");
+
+        // Save scene
+        var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+        UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene);
     }
 }

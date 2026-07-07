@@ -198,8 +198,8 @@ public class BehaviourPreviewWindow : EditorWindow
             bool win = r.name == bestName;
             string bar = "";
             int n = Mathf.RoundToInt(r.score * 25f);
-            bar = new string('鈻?, n) + new string('鈻?, 25 - n);
-            string prefix = win ? "鈻?" : "  ";
+            bar = new string('X', n) + new string('-', 25 - n);
+            string prefix = win ? "> " : "  ";
             Color c = win ? Color.green : Color.white;
 
             var rowStyle = new GUIStyle(EditorStyles.label);

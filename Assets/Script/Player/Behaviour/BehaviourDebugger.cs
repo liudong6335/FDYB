@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class BehaviourDebugger : MonoBehaviour
@@ -12,7 +12,7 @@ public class BehaviourDebugger : MonoBehaviour
     [SerializeField] private int fontSize = 14;
     [SerializeField] private float bgAlpha = 0.7f;
 
-    [Header("Panel Position 鈥?offset from top-left")]
+    [Header("Panel Position")]
     [SerializeField] private float panelX = 20f;
     [SerializeField] private float panelY = 60f;
     [SerializeField] private float panelWidth = 380f;
@@ -25,8 +25,10 @@ public class BehaviourDebugger : MonoBehaviour
 
     private void Awake()
     {
-        if (targetModel == null) targetModel = GetComponent<BehaviourModel>();
-        if (targetModel == null) targetModel = FindFirstObjectByType<BehaviourModel>();
+        if (targetModel == null)
+            targetModel = GetComponent<BehaviourModelBase>();
+        if (targetModel == null)
+            targetModel = FindFirstObjectByType<BehaviourModelBase>();
         visible = showOnStart;
         SetupStyles();
     }
@@ -75,7 +77,7 @@ public class BehaviourDebugger : MonoBehaviour
 
         string playerLabel = gameObject.name;
         GUI.Label(new Rect(x, y, w, headerH),
-            $"Behaviour 鈥?{playerLabel}", titleStyle);
+            "Behaviour - " + playerLabel, titleStyle);
         y += headerH;
 
         foreach (var d in data)
@@ -83,17 +85,15 @@ public class BehaviourDebugger : MonoBehaviour
             var style = d.isWinner ? winnerStyle : labelStyle;
             string bar = "";
             int barLen = Mathf.RoundToInt(d.score * 20f);
-            for (int i = 0; i < barLen; i++) bar += "鈻?;
-            for (int i = barLen; i < 20; i++) bar += "鈻?;
-            string prefix = d.isWinner ? "鈻?" : "  ";
+            for (int i = 0; i < barLen; i++) bar += "#";
+            for (int i = barLen; i < 20; i++) bar += "-";
+            string prefix = d.isWinner ? "> " : "  ";
             GUI.Label(new Rect(x, y, w, lineH),
-                $"{prefix}{d.actionName,-14} {d.score:F3} {bar}", style);
+                prefix + d.actionName + " " + d.score.ToString("F3") + " " + bar, style);
             y += lineH;
         }
 
         GUI.Label(new Rect(x, y, w, 20f),
-            $"F8: toggle  |  {targetModel.GetCardName()}", labelStyle);
+            "F8: toggle | " + targetModel.GetCardName(), labelStyle);
     }
 }
-
-

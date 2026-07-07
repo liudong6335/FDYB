@@ -281,6 +281,13 @@ public class InventoryManager : MonoBehaviour
         OnInventoryChanged?.Invoke();
     }
 
+    public List<GameItem> GetPlayerBackpack(PlayerMove player)
+    {
+        if (player == player1) return p1Backpack;
+        if (player == player2) return p2Backpack;
+        return p1Backpack;
+    }
+
     public int GetGold(PlayerMove player)
     {
         if (player == player1) return p1Gold;
@@ -312,6 +319,7 @@ public class InventoryManager : MonoBehaviour
     public int P1Gold { get { return p1Gold; } }
     public int P2Gold { get { return p2Gold; } }
 }
+
 
 
 

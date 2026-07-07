@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c187e129b16282c409249065c58545d1, type: 3}
+  m_Name: DefaultAICard
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterCard
+  characterName: AI Companion
+  background: A loyal companion who fights alongside the hero.
+  aggression: 0.6
+  caution: 0.5
+  supportiveness: 0.7
+  independence: 0.3
+  preferredRange: 0.4
+  focusFire: 0.7
+  potionThreshold: 0.5
+  followDistance: 5
+  aggroRange: 15
+  kiteHealthThreshold: 0.6
+  npcPullRadius: 12
+  fleeHealthThreshold: 0.3

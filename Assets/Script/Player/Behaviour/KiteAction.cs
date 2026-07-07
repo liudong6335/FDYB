@@ -24,6 +24,7 @@ public class KiteAction : IAction
         if (card.victoryFocus > 0.5f && ctx.npcExists && ctx.npcAlive && ctx.npcIsWalking)
             score += card.victoryFocus * 0.25f;
 
+                score += card.oppression * 0.2f;
         return Mathf.Clamp01(score);
     }
 
@@ -60,4 +61,5 @@ public class KiteAction : IAction
         }
     }
 }
+
 

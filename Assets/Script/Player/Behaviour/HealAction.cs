@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class HealAction : IAction
 {
@@ -17,6 +17,7 @@ public class HealAction : IAction
 
         if (ctx.threatLevel > 0.6f && ctx.healthPercent < 0.4f) score += 0.2f;
 
+                score -= card.forcefulness * 0.15f;
         return Mathf.Clamp01(score);
     }
 
@@ -29,3 +30,4 @@ public class HealAction : IAction
         if (inv != null) inv.UseConsumable("health_potion_1", player);
     }
 }
+

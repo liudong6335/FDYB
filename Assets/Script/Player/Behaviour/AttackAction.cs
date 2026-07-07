@@ -25,6 +25,7 @@ public class AttackAction : IAction
         // 鑷繚锛氭畫琛€鏃跺噺灏戞敾鍑绘剰鎰?        if (ctx.healthPercent < 0.35f)
             score -= (0.35f - ctx.healthPercent) * 2f * (card.caution + card.selfPreservation) * 0.5f;
 
+                score += card.oppression * 0.15f + card.forcefulness * 0.15f;
         return Mathf.Clamp01(score);
     }
 
@@ -56,4 +57,5 @@ public class AttackAction : IAction
         }
     }
 }
+
 

@@ -1,11 +1,11 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System.Reflection;
 
 /// <summary>
 /// Editor window for previewing action scores without entering Play Mode.
-/// Window → Behaviour Preview
+/// Window 鈫?Behaviour Preview
 /// </summary>
 public class BehaviourPreviewWindow : EditorWindow
 {
@@ -23,7 +23,7 @@ public class BehaviourPreviewWindow : EditorWindow
     // Action cache
     private List<IAction> actions = new List<IAction>();
 
-    // Map trait list index → fixed field name (for cards that still use legacy fields)
+    // Map trait list index 鈫?fixed field name (for cards that still use legacy fields)
     private Dictionary<int, string> traitFieldMap = new Dictionary<int, string>();
     private bool mapBuilt = false;
 
@@ -70,6 +70,8 @@ public class BehaviourPreviewWindow : EditorWindow
             { "Combat_preferredRange", "preferredRange" },
             { "Combat_focusFire", "focusFire" },
             { "Combat_potionThreshold", "potionThreshold" },
+            { "Combat_oppression", "oppression" },
+            { "Combat_forcefulness", "forcefulness" },
             { "Movement_followDistance", "followDistance" },
             { "Movement_aggroRange", "aggroRange" },
             { "Kiting_kiteHealthThreshold", "kiteHealthThreshold" },
@@ -107,9 +109,9 @@ public class BehaviourPreviewWindow : EditorWindow
 
         if (!mapBuilt) BuildFieldMap();
 
-        // ── Traits ──
+        // 鈹€鈹€ Traits 鈹€鈹€
         EditorGUILayout.Space(8);
-        EditorGUILayout.LabelField("Traits — drag to adjust, scores update live", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("Traits 鈥?drag to adjust, scores update live", EditorStyles.boldLabel);
         EditorGUILayout.Space(4);
 
         Undo.RecordObject(card, "Modify Character Card");
@@ -145,9 +147,9 @@ public class BehaviourPreviewWindow : EditorWindow
 
         if (changed) EditorUtility.SetDirty(card);
 
-        // ── Scenario ──
+        // 鈹€鈹€ Scenario 鈹€鈹€
         EditorGUILayout.Space(12);
-        EditorGUILayout.LabelField("Scenario — simulate game conditions", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("Scenario 鈥?simulate game conditions", EditorStyles.boldLabel);
         EditorGUILayout.Space(4);
 
         ctxHealth = EditorGUILayout.Slider("Health %", ctxHealth, 0f, 1f);
@@ -157,7 +159,7 @@ public class BehaviourPreviewWindow : EditorWindow
         ctxNpcWalking = EditorGUILayout.Toggle("NPC Is Walking", ctxNpcWalking);
         ctxPotions = EditorGUILayout.IntSlider("Potions Available", ctxPotions, 0, 10);
 
-        // ── Scores ──
+        // 鈹€鈹€ Scores 鈹€鈹€
         EditorGUILayout.Space(12);
         EditorGUILayout.LabelField("Action Scores", EditorStyles.boldLabel);
         EditorGUILayout.Space(4);
@@ -196,8 +198,8 @@ public class BehaviourPreviewWindow : EditorWindow
             bool win = r.name == bestName;
             string bar = "";
             int n = Mathf.RoundToInt(r.score * 25f);
-            bar = new string('█', n) + new string('░', 25 - n);
-            string prefix = win ? "► " : "  ";
+            bar = new string('鈻?, n) + new string('鈻?, 25 - n);
+            string prefix = win ? "鈻?" : "  ";
             Color c = win ? Color.green : Color.white;
 
             var rowStyle = new GUIStyle(EditorStyles.label);
@@ -223,3 +225,4 @@ public class BehaviourPreviewWindow : EditorWindow
         EditorGUILayout.EndScrollView();
     }
 }
+

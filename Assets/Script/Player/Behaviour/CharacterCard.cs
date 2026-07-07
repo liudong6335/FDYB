@@ -11,7 +11,6 @@ public class CharacterCard : ScriptableObject
     [Header("Traits — add/remove entries here")]
     public List<TraitEntry> traits = new List<TraitEntry>();
 
-    // ── Fixed fields for backward compatibility ──
     [Header("Personality (legacy)")]
     [Range(0f, 1f)] public float aggression = 0.5f;
     [Range(0f, 1f)] public float caution = 0.5f;
@@ -26,6 +25,8 @@ public class CharacterCard : ScriptableObject
     [Header("Combat Style (legacy)")]
     [Range(0f, 1f)] public float preferredRange = 0.5f;
     [Range(0f, 1f)] public float focusFire = 0.5f;
+    [Range(0f, 1f)] public float oppression = 0.5f;
+    [Range(0f, 1f)] public float forcefulness = 0.5f;
     public float potionThreshold = 0.5f;
 
     [Header("Movement (legacy)")]

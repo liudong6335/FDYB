@@ -21,6 +21,7 @@ public class FleeAction : IAction
         // 姹傝儨锛氭兂璧㈢殑浜轰笉浼氳交鏄撻€?        if (card.victoryFocus > 0.5f && ctx.nearbyEnemyCount > 0)
             score -= card.victoryFocus * 0.1f;
 
+                score -= (card.oppression + card.forcefulness) * 0.12f;
         return Mathf.Clamp01(score);
     }
 
@@ -39,4 +40,5 @@ public class FleeAction : IAction
             player.SetMoveDestination(ctx.player1Target.position);
     }
 }
+
 

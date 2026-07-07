@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(PlayerMove))]
@@ -8,6 +8,14 @@ public class BehaviourModel : MonoBehaviour
 {
     [Header("Character")]
     [SerializeField] private CharacterCard card;
+
+    [Header("Behaviours — toggle each action on/off per character")]
+    [SerializeField] private bool enableAttack = true;
+    [SerializeField] private bool enableKite = true;
+    [SerializeField] private bool enableHeal = true;
+    [SerializeField] private bool enableLoot = true;
+    [SerializeField] private bool enableFlee = true;
+    [SerializeField] private bool enableFollowNPC = true;
 
     [Header("Tick")]
     [SerializeField] private float tickInterval = 0.3f;
@@ -28,12 +36,12 @@ public class BehaviourModel : MonoBehaviour
         health = GetComponent<PlayerHealth>();
         player.SetPlayerAI(true);
 
-        actions.Add(new AttackAction());
-        actions.Add(new KiteAction());
-        actions.Add(new HealAction());
-        actions.Add(new LootAction());
-        actions.Add(new FleeAction());
-        actions.Add(new FollowNPCAction());
+        if (enableAttack) actions.Add(new AttackAction());
+        if (enableKite)   actions.Add(new KiteAction());
+        if (enableHeal)   actions.Add(new HealAction());
+        if (enableLoot)   actions.Add(new LootAction());
+        if (enableFlee)   actions.Add(new FleeAction());
+        if (enableFollowNPC) actions.Add(new FollowNPCAction());
     }
 
     private void Update()
@@ -124,4 +132,3 @@ public class BehaviourModel : MonoBehaviour
         return ctx;
     }
 }
-

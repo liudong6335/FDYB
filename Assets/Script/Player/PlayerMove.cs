@@ -131,12 +131,7 @@ public class PlayerMove : MonoBehaviour, IDamageable
     {
         if (playerHealth != null && playerHealth.CurrentHealth <= 0f) return;
 
-        if (!isPlayerAI)
-        {
-            HandleMouseInput();
-            HandleKeyboardMovement();
-        }
-        HandleSpeedBoost();
+        if (!isPlayerAI) { HandleMouseInput(); HandleKeyboardMovement(); HandleSpeedBoost(); } else { HandleAISpeedBoost(); }
         playerCombat.UpdateCombat();
         MoveTowardDestination();
         UpdateAnimation();
@@ -192,6 +187,11 @@ public class PlayerMove : MonoBehaviour, IDamageable
     #endregion
 
     #region Speed Boost
+
+    private void HandleAISpeedBoost()
+    {
+        // AI-controlled player does not use keyboard speed boost
+    }
 
     private void HandleSpeedBoost()
     {
@@ -313,10 +313,18 @@ public class PlayerMove : MonoBehaviour, IDamageable
     private void UpdateAnimation()
     {
         if (animator == null) return;
-        float h = Input.GetAxisRaw("Horizontal");
-        float v = Input.GetAxisRaw("Vertical");
-        bool keyboardMoving = Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f;
-        bool moving = keyboardMoving || hasMoveCommand;
+        bool moving;
+        if (isPlayerAI)
+        {
+            moving = hasMoveCommand;
+        }
+        else
+        {
+            float h = Input.GetAxisRaw("Horizontal");
+            float v = Input.GetAxisRaw("Vertical");
+            bool keyboardMoving = Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f;
+            moving = keyboardMoving || hasMoveCommand;
+        }
         if (playerCombat.IsAttackLocked) moving = false;
         animator.SetBool(isMovingParameter, moving);
         animator.SetFloat(moveSpeedParameter, moving ? moveSpeed : 0f);

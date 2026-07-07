@@ -10,56 +10,56 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c187e129b16282c409249065c58545d1, type: 3}
-  m_Name: DefaultAICard
+  m_Name: BerserkerCard
   m_EditorClassIdentifier: Assembly-CSharp::CharacterCard
-  characterName: AI Companion
-  background: A loyal companion who fights alongside the hero.
+  characterName: Berserker
+  background: A reckless fighter who charges into battle without fear.
   traits:
   - definition: {fileID: 11400000, guid: 52fe6bf4fbf8d1c4bb051839e0cd91d0, type: 2}
-    value: 0.65
+    value: 0.2
   - definition: {fileID: 11400000, guid: 45057cf67ef34be4687c54c05d53d755, type: 2}
-    value: 0.7
+    value: 0.8
   - definition: {fileID: 11400000, guid: 1bbe16e5366a0c64d8ecacd73ee4adf5, type: 2}
-    value: 0.6
+    value: 0.9
   - definition: {fileID: 11400000, guid: f1fb881ce3458ea4eb9d3aacaab80d0e, type: 2}
-    value: 0.5
+    value: 0.2
   - definition: {fileID: 11400000, guid: 56ca4e7b3425ac24d84a41c2f26f5db0, type: 2}
-    value: 0.7
-  - definition: {fileID: 11400000, guid: 7c362d04466287d408b4d277c4e0cf5b, type: 2}
     value: 0.3
+  - definition: {fileID: 11400000, guid: 7c362d04466287d408b4d277c4e0cf5b, type: 2}
+    value: 0.8
   - definition: {fileID: 11400000, guid: 9632365503f598b4e8e8974e6ec6d84b, type: 2}
-    value: 0.4
+    value: 0.3
   - definition: {fileID: 11400000, guid: 1a17e064236a4be458239a7dbf5127a0, type: 2}
-    value: 0.4
+    value: 0.1
   - definition: {fileID: 11400000, guid: 91a51f138faeabd4f9c5f324bd9dd715, type: 2}
-    value: 0.7
+    value: 0.4
   - definition: {fileID: 11400000, guid: 5205ee624bc1aa444b8d8803e61aea0b, type: 2}
-    value: 0.5
+    value: 0.2
   - definition: {fileID: 11400000, guid: fbbb404e82ed7e84e97ac072cda3e028, type: 2}
-    value: 5
+    value: 8
   - definition: {fileID: 11400000, guid: b7abdc5419e9a0c4d92797768d144354, type: 2}
-    value: 15
+    value: 20
   - definition: {fileID: 11400000, guid: f631662f35bdb1140ba9398957c63797, type: 2}
     value: 0.6
   - definition: {fileID: 11400000, guid: 96acb385ca7e70548b74bf55e4895fc0, type: 2}
     value: 12
   - definition: {fileID: 11400000, guid: 7f9e40be4ea609c4e93c2bb4f01c42ae, type: 2}
-    value: 0.3
+    value: 0.1
   - definition: {fileID: 11400000, guid: 43a5bb80eeb231442bdff62330dc01a0, type: 2}
-    value: 12
-  aggression: 0.6
-  caution: 0.5
-  supportiveness: 0.7
-  independence: 0.3
-  greed: 0.4
-  selfPreservation: 0.65
-  victoryFocus: 0.7
-  preferredRange: 0.4
-  focusFire: 0.7
-  potionThreshold: 0.5
-  followDistance: 5
-  aggroRange: 15
+    value: 10
+  aggression: 0.9
+  caution: 0.2
+  supportiveness: 0.3
+  independence: 0.8
+  greed: 0.3
+  selfPreservation: 0.2
+  victoryFocus: 0.8
+  preferredRange: 0.1
+  focusFire: 0.4
+  potionThreshold: 0.2
+  followDistance: 8
+  aggroRange: 20
   kiteHealthThreshold: 0.6
   npcPullRadius: 12
-  fleeHealthThreshold: 0.3
-  lootRadius: 12
+  fleeHealthThreshold: 0.1
+  lootRadius: 10

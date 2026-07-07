@@ -19,6 +19,8 @@ MonoBehaviour:
   supportiveness: 0.7
   independence: 0.3
   greed: 0.4
+  selfPreservation: 0.65
+  victoryFocus: 0.7
   preferredRange: 0.4
   focusFire: 0.7
   potionThreshold: 0.5

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class KiteAction : IAction
 {
@@ -8,14 +8,22 @@ public class KiteAction : IAction
     {
         if (ctx.healthPercent < card.kiteHealthThreshold) return 0f;
         if (ctx.nearbyEnemyCount == 0 && (!ctx.npcExists || ctx.distanceToNPC > card.npcPullRadius)) return 0f;
+
         float score = card.preferredRange * 0.4f;
         score += card.supportiveness * 0.3f;
+
         if (ctx.npcExists && ctx.npcAlive && ctx.npcIsWalking)
         {
             float nearNpc = Mathf.Max(0f, 1f - ctx.distanceToNPC / card.npcPullRadius);
             score += nearNpc * 0.3f;
         }
+
         score += card.aggression * (1f - card.caution) * 0.2f;
+
+        // 求胜：护送阶段积极拉怪保护NPC
+        if (card.victoryFocus > 0.5f && ctx.npcExists && ctx.npcAlive && ctx.npcIsWalking)
+            score += card.victoryFocus * 0.25f;
+
         return Mathf.Clamp01(score);
     }
 
@@ -50,4 +58,3 @@ public class KiteAction : IAction
         }
     }
 }
-

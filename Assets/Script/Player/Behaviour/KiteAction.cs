@@ -3,13 +3,13 @@
 public class KiteAction : IAction
 {
     public string Name => "Kite";
-
     public float Evaluate(CharacterCard card, GameContext ctx)
     {
         if (ctx.healthPercent < card.kiteHealthThreshold) return 0f;
         if (ctx.nearbyEnemyCount == 0 && (!ctx.npcExists || ctx.distanceToNPC > card.npcPullRadius)) return 0f;
 
-        float score = card.preferredRange * 0.4f;
+        float score = card.preferredRange * 0.5f;
+        score += card.caution * 0.2f;
         score += card.supportiveness * 0.3f;
 
         if (ctx.npcExists && ctx.npcAlive && ctx.npcIsWalking)
@@ -18,13 +18,18 @@ public class KiteAction : IAction
             score += nearNpc * 0.3f;
         }
 
-        score += card.aggression * (1f - card.caution) * 0.2f;
+        // Recent damage: selfPreservation drives defensive kite
+        if (ctx.timeSinceLastDamaged < 4f && ctx.nearbyEnemyCount > 0)
+        {
+            float urgency = 1f - ctx.timeSinceLastDamaged / 4f;
+            score += urgency * card.selfPreservation * 0.4f;
+            score += urgency * card.caution * 0.2f;
+        }
 
-        // 姹傝儨锛氭姢閫侀樁娈电Н鏋佹媺鎬繚鎶PC
+        score += card.aggression * (1f - card.caution) * 0.15f;
         if (card.victoryFocus > 0.5f && ctx.npcExists && ctx.npcAlive && ctx.npcIsWalking)
-            score += card.victoryFocus * 0.25f;
+            score += card.victoryFocus * 0.2f;
 
-                score += card.oppression * 0.2f;
         return Mathf.Clamp01(score);
     }
 
@@ -61,5 +66,3 @@ public class KiteAction : IAction
         }
     }
 }
-
-

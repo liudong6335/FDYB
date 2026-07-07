@@ -3,21 +3,31 @@
 public class HealAction : IAction
 {
     public string Name => "Heal";
-
     public float Evaluate(CharacterCard card, GameContext ctx)
     {
-        if (ctx.potionCount <= 0) return 0f;
-        if (ctx.healthPercent >= card.potionThreshold) return 0f;
+        if (ctx.healthPercent >= 0.95f && ctx.nearbyAllyCount == 0) return 0f;
 
-        float score = Mathf.Max(0f, card.potionThreshold - ctx.healthPercent) * 2f;
-        score += card.caution * 0.15f;
+        float score = 0f;
 
-        if (card.selfPreservation > 0.5f)
-            score += card.selfPreservation * 0.2f;
+        // Heal threshold scales with selfPreservation
+        float healAt = 0.3f + card.selfPreservation * 0.4f;
+        if (ctx.healthPercent < healAt)
+            score += (healAt - ctx.healthPercent) * 2f * card.selfPreservation;
 
-        if (ctx.threatLevel > 0.6f && ctx.healthPercent < 0.4f) score += 0.2f;
+        // Support allies nearby
+        if (ctx.nearbyAllyCount > 0 && ctx.healthPercent < 0.95f)
+            score += ctx.nearbyAllyCount * 0.12f * card.supportiveness;
 
-                score -= card.forcefulness * 0.15f;
+        if (ctx.timeSinceLastDamaged < 3f)
+        {
+            float urgency = 1f - ctx.timeSinceLastDamaged / 3f;
+            score += urgency * card.caution * 0.4f;
+        }
+
+        if (ctx.threatLevel > 0.2f)
+            score += ctx.threatLevel * 0.3f * card.selfPreservation;
+
+        score += card.victoryFocus * 0.1f;
         return Mathf.Clamp01(score);
     }
 
@@ -25,9 +35,8 @@ public class HealAction : IAction
     {
         var player = owner.GetComponent<PlayerMove>();
         if (player == null) return;
-
         var inv = InventoryManager.Instance;
-        if (inv != null) inv.UseConsumable("health_potion_1", player);
+        if (inv == null) return;
+        inv.UseConsumable("health_potion_1", player);
     }
 }
-

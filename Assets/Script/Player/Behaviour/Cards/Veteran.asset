@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c187e129b16282c409249065c58545d1, type: 3}
+  m_Name: Veteran
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterCard
+  characterName: Veteran
+  background: Seasoned fighter,picks battles carefully.
+  traits:
+  - definition: {fileID: 11400000, guid: 1bbe16e5366a0c64d8ecacd73ee4adf5, type: 2}
+    value: 0.5
+  - definition: {fileID: 11400000, guid: f1fb881ce3458ea4eb9d3aacaab80d0e, type: 2}
+    value: 0.6
+  - definition: {fileID: 11400000, guid: 56ca4e7b3425ac24d84a41c2f26f5db0, type: 2}
+    value: 0.6
+  - definition: {fileID: 11400000, guid: 7c362d04466287d408b4d277c4e0cf5b, type: 2}
+    value: 0.6
+  - definition: {fileID: 11400000, guid: 9632365503f598b4e8e8974e6ec6d84b, type: 2}
+    value: 0.4
+  - definition: {fileID: 11400000, guid: 52fe6bf4fbf8d1c4bb051839e0cd91d0, type: 2}
+    value: 0.7
+  - definition: {fileID: 11400000, guid: 45057cf67ef34be4687c54c05d53d755, type: 2}
+    value: 0.6
+  - definition: {fileID: 11400000, guid: 1a17e064236a4be458239a7dbf5127a0, type: 2}
+    value: 0.5
+  - definition: {fileID: 11400000, guid: 91a51f138faeabd4f9c5f324bd9dd715, type: 2}
+    value: 0.6
+  - definition: {fileID: 11400000, guid: bff28b5436f2a7a42ab74990acd3bdb5, type: 2}
+    value: 0.5
+  - definition: {fileID: 11400000, guid: 997ce14e0c5d55d4f9d655062d117ef5, type: 2}
+    value: 0.5
+  - definition: {fileID: 11400000, guid: 5205ee624bc1aa444b8d8803e61aea0b, type: 2}
+    value: 0.5
+  - definition: {fileID: 11400000, guid: fbbb404e82ed7e84e97ac072cda3e028, type: 2}
+    value: 4
+  - definition: {fileID: 11400000, guid: b7abdc5419e9a0c4d92797768d144354, type: 2}
+    value: 14
+  - definition: {fileID: 11400000, guid: f631662f35bdb1140ba9398957c63797, type: 2}
+    value: 0.5
+  - definition: {fileID: 11400000, guid: 96acb385ca7e70548b74bf55e4895fc0, type: 2}
+    value: 10
+  - definition: {fileID: 11400000, guid: 7f9e40be4ea609c4e93c2bb4f01c42ae, type: 2}
+    value: 0.25
+  - definition: {fileID: 11400000, guid: 43a5bb80eeb231442bdff62330dc01a0, type: 2}
+    value: 8
+  aggression: 0.5
+  caution: 0.6
+  supportiveness: 0.6
+  independence: 0.6
+  greed: 0.4
+  selfPreservation: 0.7
+  victoryFocus: 0.6
+  preferredRange: 0.5
+  focusFire: 0.6
+  oppression: 0.5
+  forcefulness: 0.5
+  potionThreshold: 0.5
+  followDistance: 4
+  aggroRange: 14
+  kiteHealthThreshold: 0.5
+  npcPullRadius: 10
+  fleeHealthThreshold: 0.25
+  lootRadius: 8

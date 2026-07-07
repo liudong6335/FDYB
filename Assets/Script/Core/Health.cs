@@ -55,6 +55,11 @@ public class Health : MonoBehaviour
     public float CombatTimeout { get { return combatTimeout; } set { combatTimeout = Mathf.Max(0f, value); } }
     public float RegenDelayAfterDamage { get { return regenDelayAfterDamage; } set { regenDelayAfterDamage = Mathf.Max(0f, value); } }
 
+    /// <summary>Seconds since last damage taken. Resets to 0 on each TakeDamage call.</summary>
+    public float TimeSinceLastDamage { get; private set; }
+    /// <summary>Optional reference to the entity that last dealt damage to us.</summary>
+    public GameObject LastAttacker { get; set; }
+
     [Header("Events")]
     public UnityEvent<float> onHealthChanged;
     public UnityEvent onDeath;
@@ -79,6 +84,8 @@ public class Health : MonoBehaviour
 
     private void Update()
     {
+        TimeSinceLastDamage += Time.deltaTime;
+
         if (isDead || !enableRegen || currentHealth >= maxHealth) return;
 
         if (inCombat) { combatTimer -= Time.deltaTime; if (combatTimer <= 0f) inCombat = false; }
@@ -93,6 +100,7 @@ public class Health : MonoBehaviour
     public void TakeDamage(float amount)
     {
         if (isDead || amount == 0f) return;
+        TimeSinceLastDamage = 0f;
         // Negative damage = healing (used by consumables)
         if (amount < 0f) { Heal(-amount); return; }
         currentHealth -= amount;

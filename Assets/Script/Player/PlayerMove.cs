@@ -296,7 +296,9 @@ public class PlayerMove : MonoBehaviour, IDamageable
         float effectiveSpeed = GetEffectiveSpeed();
         MovementUtility.FaceDirection(transform, flatDest - transform.position, rotationSpeed, Time.deltaTime);
         Vector3 newPos = Vector3.MoveTowards(transform.position, flatDest, effectiveSpeed * Time.deltaTime);
-        cc.Move(newPos - transform.position);
+        Vector3 delta = newPos - transform.position;
+        delta.y = cc.isGrounded ? -0.1f : delta.y - 9.81f * Time.deltaTime;
+        cc.Move(delta);
     }
 
     #endregion

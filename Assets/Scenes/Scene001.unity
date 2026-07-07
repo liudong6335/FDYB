@@ -469,6 +469,11 @@ Transform:
   - {fileID: 1297378250}
   m_Father: {fileID: 1453164227}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &97717395 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2278654725343003386, guid: af2c8f883208632428d71507ef2273b3, type: 3}
+  m_PrefabInstance: {fileID: 2087842858}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &100951099
 GameObject:
   m_ObjectHideFlags: 0
@@ -1012,6 +1017,11 @@ Transform:
   - {fileID: 336498816}
   m_Father: {fileID: 626490745}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &275271315 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2278654725343003386, guid: af2c8f883208632428d71507ef2273b3, type: 3}
+  m_PrefabInstance: {fileID: 3826427049643757426}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &287467119
 GameObject:
   m_ObjectHideFlags: 0
@@ -1519,6 +1529,20 @@ Animator:
   m_CorrespondingSourceObject: {fileID: 1106646209536331835, guid: af2c8f883208632428d71507ef2273b3, type: 3}
   m_PrefabInstance: {fileID: 2087842858}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &372169448
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 97717395}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca86089aa4bfe0c42a83117860f724ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MonsterBehaviourModel
+  card: {fileID: 11400000, guid: fe2de3b39f1d5ea44a6a748147732d05, type: 2}
+  tickInterval: 0.8
 --- !u!1 &401202819
 GameObject:
   m_ObjectHideFlags: 0
@@ -1773,6 +1797,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 16963262a4c9db54bb764136cc623a75, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1987120277}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 16963262a4c9db54bb764136cc623a75, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1987120283}
   m_SourcePrefab: {fileID: 100100000, guid: 16963262a4c9db54bb764136cc623a75, type: 3}
 --- !u!1 &452427199
 GameObject:
@@ -2003,7 +2030,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cf8911a6dbd2b5a42becaf86d53f67d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  target: {fileID: 1053957546}
+  target: {fileID: 1580355492}
   offset: {x: 0, y: 10, z: -5}
   smoothTime: 0.125
   useDeadZone: 1
@@ -2484,6 +2511,7 @@ GameObject:
   - component: {fileID: 638662075}
   - component: {fileID: 638662074}
   - component: {fileID: 638662073}
+  - component: {fileID: 638662077}
   m_Layer: 0
   m_Name: Obstacle01 (2)
   m_TagString: Untagged
@@ -2584,6 +2612,26 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1551578416}
   m_LocalEulerAnglesHint: {x: 2.173, y: 21.281, z: 5.114}
+--- !u!114 &638662077
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 638662072}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e3fdca004f2d45fe8abbed571a8abd5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.AI.Navigation::Unity.AI.Navigation.NavMeshModifier
+  m_SerializedVersion: 0
+  m_OverrideArea: 1
+  m_Area: 1
+  m_OverrideGenerateLinks: 0
+  m_GenerateLinks: 0
+  m_IgnoreFromBuild: 0
+  m_ApplyToChildren: 1
+  m_AffectedAgents: ffffffff
 --- !u!1 &647914342 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8563500858200346095, guid: 8c473a16ab6466746adbbbd41b8bff25, type: 3}
@@ -2621,10 +2669,10 @@ MonoBehaviour:
   npcMaxPlayerDistance: 20
   demonMinionPrefab: {fileID: 919132149155446097, guid: b5b122839c1b8e745ab34ca98134dac3, type: 3}
   demonSpawnIntervalMin: 10
-  demonSpawnIntervalMax: 40
+  demonSpawnIntervalMax: 30
   maxDemonMinions: 4
   maxDemonLevel: 3
-  demonReviveTime: 15
+  demonReviveTime: 10
   bossAwakenTime: 480
   killAccelerationPerKill: 15
   woodenChestPrefab: {fileID: 0}
@@ -4078,7 +4126,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1053957539
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4139,7 +4187,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
   maxHealth: 1000
-  baseDamage: 100
+  baseDamage: 40
   attackRange: 8
   hitParam: Hit
   deathParam: Death
@@ -4759,6 +4807,18 @@ PrefabInstance:
     - target: {fileID: 3928845366848310456, guid: af2c8f883208632428d71507ef2273b3, type: 3}
       propertyPath: m_Layer
       value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3942406140187000720, guid: af2c8f883208632428d71507ef2273b3, type: 3}
+      propertyPath: maxHealth
+      value: 400
+      objectReference: {fileID: 0}
+    - target: {fileID: 3942406140187000720, guid: af2c8f883208632428d71507ef2273b3, type: 3}
+      propertyPath: currentHealth
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3942406140187000720, guid: af2c8f883208632428d71507ef2273b3, type: 3}
+      propertyPath: regenPerSecond
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4105764327095288972, guid: af2c8f883208632428d71507ef2273b3, type: 3}
       propertyPath: m_Layer
@@ -6091,6 +6151,7 @@ GameObject:
   - component: {fileID: 1420425453}
   - component: {fileID: 1420425451}
   - component: {fileID: 1420425462}
+  - component: {fileID: 1420425463}
   m_Layer: 0
   m_Name: Player03
   m_TagString: Player
@@ -6202,8 +6263,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c988a49248936f649984f8d6ff63b704, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
-  maxHealth: 1000
-  baseDamage: 100
+  maxHealth: 600
+  baseDamage: 40
   attackRange: 8
   hitParam: Hit
   deathParam: Death
@@ -6219,7 +6280,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c501, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Health
-  maxHealth: 1000
+  maxHealth: 600
   currentHealth: 3
   enableRegen: 1
   regenPerSecond: 1
@@ -6334,7 +6395,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2826920ff34398c4582d3e4cba019f35, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerBehaviourModel
-  card: {fileID: 11400000, guid: 87d59e622c1193846ba041538b1c8c49, type: 2}
+  card: {fileID: 11400000, guid: a681dea6729fedb408ec6006c5ecc098, type: 2}
   tickInterval: 0.3
   enableAttack: 1
   enableKite: 1
@@ -6342,6 +6403,28 @@ MonoBehaviour:
   enableLoot: 1
   enableFlee: 1
   enableFollowNPC: 1
+--- !u!195 &1420425463
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1420425450}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 0.5
+  m_Speed: 4
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 300
+  m_StoppingDistance: 0
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 2
+  m_BaseOffset: 0
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
 --- !u!1 &1453164226
 GameObject:
   m_ObjectHideFlags: 0
@@ -6605,6 +6688,14 @@ PrefabInstance:
     - target: {fileID: 2278654725343003386, guid: af2c8f883208632428d71507ef2273b3, type: 3}
       propertyPath: m_TagString
       value: Enemy
+      objectReference: {fileID: 0}
+    - target: {fileID: 3942406140187000720, guid: af2c8f883208632428d71507ef2273b3, type: 3}
+      propertyPath: maxHealth
+      value: 400
+      objectReference: {fileID: 0}
+    - target: {fileID: 3942406140187000720, guid: af2c8f883208632428d71507ef2273b3, type: 3}
+      propertyPath: currentHealth
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 8783382086540387255, guid: af2c8f883208632428d71507ef2273b3, type: 3}
       propertyPath: animator
@@ -7074,6 +7165,11 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 0
   speedBoostKey: 113
+--- !u!4 &1580355492 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 9051243509318195029, guid: 8c473a16ab6466746adbbbd41b8bff25, type: 3}
+  m_PrefabInstance: {fileID: 2086034154}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1585295975
 GameObject:
   m_ObjectHideFlags: 0
@@ -7217,6 +7313,7 @@ GameObject:
   - component: {fileID: 1627373718}
   - component: {fileID: 1627373717}
   - component: {fileID: 1627373716}
+  - component: {fileID: 1627373720}
   m_Layer: 0
   m_Name: Obstacle01
   m_TagString: Untagged
@@ -7310,13 +7407,33 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1627373715}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 8.99394, y: 0.02, z: 21.024311}
-  m_LocalScale: {x: 3.9168, y: 3.9168, z: 3.9168}
+  m_LocalRotation: {x: -0, y: -0.17646007, z: -0, w: 0.9843078}
+  m_LocalPosition: {x: 5.47, y: 0.02, z: 19.72}
+  m_LocalScale: {x: 3.9168, y: 3.9168, z: 11.697131}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1551578416}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: -20.327, z: 0}
+--- !u!114 &1627373720
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1627373715}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e3fdca004f2d45fe8abbed571a8abd5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.AI.Navigation::Unity.AI.Navigation.NavMeshModifier
+  m_SerializedVersion: 0
+  m_OverrideArea: 1
+  m_Area: 1
+  m_OverrideGenerateLinks: 0
+  m_GenerateLinks: 0
+  m_IgnoreFromBuild: 0
+  m_ApplyToChildren: 1
+  m_AffectedAgents: ffffffff
 --- !u!1 &1627869370
 GameObject:
   m_ObjectHideFlags: 0
@@ -7782,12 +7899,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 58ceee18b65de4847816973a4601288b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxHealth: 1200
-  healthRegen: 5
+  maxHealth: 800
+  healthRegen: 3
   waypointPath: {fileID: 717699302}
   rotationSpeed: 8
   minSpeed: 1
-  maxSpeed: 3
+  maxSpeed: 2
   speedChangeIntervalMin: 4
   speedChangeIntervalMax: 8
   speedSmoothTime: 0.8
@@ -7815,6 +7932,7 @@ MonoBehaviour:
   damageSlowDuration: 2
   stuckCheckInterval: 3
   stuckThreshold: 0.3
+  useBehaviourAI: 1
   animator: {fileID: 1796927689}
   isMovingParam: IsMoving
   moveSpeedParam: MoveSpeed
@@ -7895,6 +8013,20 @@ MonoBehaviour:
   lowColor: {r: 0.9, g: 0.15, b: 0.15, a: 1}
   smoothSpeed: 8
   hideAtFullHealth: 0
+--- !u!114 &1796927703
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1796927687}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51c13e10a42fba44384ce2a06573676b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NPCBehaviourModel
+  card: {fileID: 11400000, guid: bdbbcae7986d7b344bdc983aff827043, type: 2}
+  tickInterval: 0.3
 --- !u!95 &1800737378 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 1106646209536331835, guid: af2c8f883208632428d71507ef2273b3, type: 3}
@@ -7905,12 +8037,26 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 3251157293813924569, guid: af2c8f883208632428d71507ef2273b3, type: 3}
   m_PrefabInstance: {fileID: 3826427049643757426}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
+  m_GameObject: {fileID: 275271315}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 04a36210f31f8ac4ead6a0e3e6ce6218, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UGUIFloatingHealthBar
+--- !u!114 &1800737380
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 275271315}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca86089aa4bfe0c42a83117860f724ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MonsterBehaviourModel
+  card: {fileID: 11400000, guid: fe2de3b39f1d5ea44a6a748147732d05, type: 2}
+  tickInterval: 0.3
 --- !u!114 &1819312583
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8411,6 +8557,38 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 16963262a4c9db54bb764136cc623a75, type: 3}
   m_PrefabInstance: {fileID: 445103475}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1987120283
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1987120273}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a5ac11cc976e418e8d13136b07e1f52, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.AI.Navigation::Unity.AI.Navigation.NavMeshSurface
+  m_SerializedVersion: 0
+  m_AgentTypeID: 0
+  m_CollectObjects: 0
+  m_Size: {x: 10, y: 10, z: 10}
+  m_Center: {x: 0, y: 2, z: 0}
+  m_LayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_UseGeometry: 0
+  m_DefaultArea: 0
+  m_GenerateLinks: 0
+  m_IgnoreNavMeshAgent: 1
+  m_IgnoreNavMeshObstacle: 1
+  m_OverrideTileSize: 0
+  m_TileSize: 256
+  m_OverrideVoxelSize: 0
+  m_VoxelSize: 0.16666667
+  m_MinRegionArea: 2
+  m_NavMeshData: {fileID: 23800000, guid: dbe80c5239bd0ed45aad584b3a38b641, type: 2}
+  m_BuildHeightMesh: 0
 --- !u!1 &1997817505
 GameObject:
   m_ObjectHideFlags: 0
@@ -8716,6 +8894,7 @@ GameObject:
   - component: {fileID: 2070231041}
   - component: {fileID: 2070231040}
   - component: {fileID: 2070231039}
+  - component: {fileID: 2070231043}
   m_Layer: 0
   m_Name: Obstacle01 (1)
   m_TagString: Untagged
@@ -8809,13 +8988,33 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2070231038}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.09537099, y: 0.34657082, z: -0.25237578, w: 0.8983872}
-  m_LocalPosition: {x: 5.12394, y: -0.59, z: -6.845689}
+  m_LocalRotation: {x: -0.118869774, y: 0.3640297, z: -0.037682734, w: 0.9230019}
+  m_LocalPosition: {x: 2.89, y: -1.12, z: -8.79}
   m_LocalScale: {x: 5.12356, y: 4.7475543, z: 4.747554}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1551578416}
-  m_LocalEulerAnglesHint: {x: 0.205, y: 42.133, z: -31.304}
+  m_LocalEulerAnglesHint: {x: -11.069, y: 43.937, z: -9.153}
+--- !u!114 &2070231043
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2070231038}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e3fdca004f2d45fe8abbed571a8abd5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.AI.Navigation::Unity.AI.Navigation.NavMeshModifier
+  m_SerializedVersion: 0
+  m_OverrideArea: 1
+  m_Area: 1
+  m_OverrideGenerateLinks: 0
+  m_GenerateLinks: 0
+  m_IgnoreFromBuild: 0
+  m_ApplyToChildren: 1
+  m_AffectedAgents: ffffffff
 --- !u!1 &2084626991
 GameObject:
   m_ObjectHideFlags: 0
@@ -8873,7 +9072,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8563500858200346095, guid: 8c473a16ab6466746adbbbd41b8bff25, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9051243509318195029, guid: 8c473a16ab6466746adbbbd41b8bff25, type: 3}
       propertyPath: m_LocalPosition.x
@@ -8999,6 +9198,14 @@ PrefabInstance:
       propertyPath: m_TagString
       value: Enemy
       objectReference: {fileID: 0}
+    - target: {fileID: 3942406140187000720, guid: af2c8f883208632428d71507ef2273b3, type: 3}
+      propertyPath: maxHealth
+      value: 400
+      objectReference: {fileID: 0}
+    - target: {fileID: 3942406140187000720, guid: af2c8f883208632428d71507ef2273b3, type: 3}
+      propertyPath: currentHealth
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 8783382086540387255, guid: af2c8f883208632428d71507ef2273b3, type: 3}
       propertyPath: animator
       value: 
@@ -9012,12 +9219,16 @@ PrefabInstance:
       value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 8783382086540387255, guid: af2c8f883208632428d71507ef2273b3, type: 3}
+      propertyPath: useBehaviourAI
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8783382086540387255, guid: af2c8f883208632428d71507ef2273b3, type: 3}
       propertyPath: 'levelDamage.Array.data[0]'
-      value: 30
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: 8783382086540387255, guid: af2c8f883208632428d71507ef2273b3, type: 3}
       propertyPath: 'levelDamage.Array.data[1]'
-      value: 50
+      value: 80
       objectReference: {fileID: 0}
     - target: {fileID: 8783382086540387255, guid: af2c8f883208632428d71507ef2273b3, type: 3}
       propertyPath: 'levelDamage.Array.data[2]'
@@ -9026,7 +9237,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2278654725343003386, guid: af2c8f883208632428d71507ef2273b3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 372169448}
   m_SourcePrefab: {fileID: 100100000, guid: af2c8f883208632428d71507ef2273b3, type: 3}
 --- !u!1 &2091313078
 GameObject:
@@ -9068,6 +9282,26 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 639182834806682001, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5138643344599376124, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
+      propertyPath: m_Speed
+      value: 2.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 5138643344599376124, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5138643344599376124, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
+      propertyPath: m_AutoBraking
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5138643344599376124, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
+      propertyPath: m_StoppingDistance
+      value: 0.5
+      objectReference: {fileID: 0}
     - target: {fileID: 6952509770047980630, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
       propertyPath: m_Name
       value: NPC
@@ -9132,6 +9366,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 6952509770047980630, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1796927700}
+    - targetCorrespondingSourceObject: {fileID: 6952509770047980630, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1796927703}
   m_SourcePrefab: {fileID: 100100000, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
 --- !u!1 &2130571761
 GameObject:
@@ -9384,6 +9621,14 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 8
       objectReference: {fileID: 0}
+    - target: {fileID: 3942406140187000720, guid: af2c8f883208632428d71507ef2273b3, type: 3}
+      propertyPath: maxHealth
+      value: 400
+      objectReference: {fileID: 0}
+    - target: {fileID: 3942406140187000720, guid: af2c8f883208632428d71507ef2273b3, type: 3}
+      propertyPath: currentHealth
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 4105764327095288972, guid: af2c8f883208632428d71507ef2273b3, type: 3}
       propertyPath: m_Layer
       value: 8
@@ -9573,6 +9818,10 @@ PrefabInstance:
       value: 1.5
       objectReference: {fileID: 0}
     - target: {fileID: 8783382086540387255, guid: af2c8f883208632428d71507ef2273b3, type: 3}
+      propertyPath: useBehaviourAI
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8783382086540387255, guid: af2c8f883208632428d71507ef2273b3, type: 3}
       propertyPath: 'levelDamage.Array.data[0]'
       value: 30
       objectReference: {fileID: 0}
@@ -9603,7 +9852,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2278654725343003386, guid: af2c8f883208632428d71507ef2273b3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1800737380}
   m_SourcePrefab: {fileID: 100100000, guid: af2c8f883208632428d71507ef2273b3, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

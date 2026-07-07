@@ -18,6 +18,18 @@ public struct GameContext
     public float nearestEnemyDistance;
     public List<DemonMinion> allDemons;
 
+    // Short-term memory
+    public float timeSinceLastDamaged;
+    public GameObject lastAttacker;
+
+    // Group perception
+    public int nearbyAllyCount;
+
+    // Targeting
+    public Transform primaryTarget;
+    public float distanceToTarget;
+    public float attackRange;
+
     // Allies
     public bool npcExists;
     public bool npcAlive;

@@ -10,8 +10,33 @@ public class AttackAction : IAction
         if (ctx.healthPercent <= 0f) return 0f;
 
         float score = card.aggression * 0.5f;
-        score += Mathf.Min(ctx.nearbyEnemyCount / 5f, 1f) * 0.3f;
-        score += Mathf.Max(0f, 1f - ctx.nearestEnemyDistance / card.aggroRange) * 0.2f;
+        score -= card.caution * 0.3f;
+
+        // Continuous health penalty: low health suppresses attack proportionally
+        score -= (1f - ctx.healthPercent) * card.selfPreservation * 0.5f;
+
+        // Proximity: close targets are more compelling
+        float proximity = Mathf.Max(0f, 1f - ctx.nearestEnemyDistance / card.aggroRange);
+        score += proximity * 0.15f;
+
+        // Group: allies make you braver
+        score += ctx.nearbyAllyCount * 0.06f * card.supportiveness;
+
+        // VictoryFocus adds when healthy enough to push objectives
+        if (ctx.healthPercent > 0.5f) score += card.victoryFocus * 0.2f;
+
+        // SelfPreservation penalty (old - kept for backward compat)
+        score += ctx.nearbyEnemyCount * 0.03f;
+        score += ctx.nearbyAllyCount * 0.06f * card.supportiveness;
+
+        // Revenge: if just hit (< 2s ago), fight back harder
+        if (ctx.timeSinceLastDamaged < 2f)
+        {
+            float recency = 1f - ctx.timeSinceLastDamaged / 2f;
+            score += recency * card.aggression * 0.25f;
+            score += recency * card.forcefulness * 0.2f;
+            score -= recency * card.caution * 0.15f;
+        }
 
         // 姹傝儨锛氭竻闄ゅ▉鑳?= 鎺ㄥ姩鑳滃埄
         score += ctx.nearbyEnemyCount * 0.05f * card.victoryFocus;

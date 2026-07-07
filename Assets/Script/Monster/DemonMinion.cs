@@ -40,6 +40,7 @@
  *   - NPC到达终点后怪物会自动死亡
  */
 using UnityEngine;
+using UnityEngine.AI;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -82,7 +83,12 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     [Header("References")]
     [SerializeField] private UGUIFloatingHealthBar healthBar;
 
+    [Header("Behaviour AI")]
+    [Tooltip("When true, BehaviourModelBase drives decisions; old state-machine AI is skipped.")]
+    [SerializeField] private bool useBehaviourAI = false;
+
     private Health health;
+    private NavMeshAgent navAgent;
     private int currentLevel = 1;
     private float currentDamage;
     private NPCGoddess targetNPC;
@@ -93,6 +99,23 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     private bool isMovingInFrame;
     private bool initialized;
     private CharacterController cc;
+    
+    /// <summary>Whether NavMeshAgent is available and on a valid NavMesh.</summary>
+    public bool UseNavMesh { get { return navAgent != null && navAgent.isActiveAndEnabled && navAgent.isOnNavMesh; } }
+
+    private void SetupNavMeshAgent()
+    {
+        navAgent = GetComponent<NavMeshAgent>();
+        if (navAgent != null)
+        {
+            navAgent.speed = moveSpeed;
+            navAgent.angularSpeed = rotationSpeed * 100f;
+            navAgent.stoppingDistance = attackRange * 0.5f;
+            navAgent.radius = 0.35f;
+            navAgent.height = 1.8f;
+        }
+    }
+
     private Renderer[] cachedRenderers;
     private Transform attackerTransform;
 
@@ -115,6 +138,18 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     public float CurrentHealth { get { return health != null ? health.CurrentHealth : 0f; } }
     public float HealthPercent { get { return health != null ? health.HealthPercent : 0f; } }
     public float MaxHealth { get { return health != null ? health.MaxHealth : 0f; } }
+    public float AttackRange { get { return attackRange; } }
+    public float SqAttackRange { get { return sqrAttackRange; } }
+    public float SqAggroRange { get { return sqrAggroRange; } }
+    public float SqDisengageDistance { get { return sqrDisengageDistance; } }
+    public float MoveSpeed { get { return moveSpeed; } }
+    public Transform AttackerTransform { get { return attackerTransform; } }
+    public void SetBehaviourAI(bool enabled) { useBehaviourAI = enabled; }
+    public bool IsBehaviourAIEnabled { get { return useBehaviourAI; } }
+    /// <summary>Chase target set by Behaviour tick, consumed per-frame in Update().</summary>
+    private Transform aiChaseTarget;
+    public void SetChaseTarget(Transform t) { aiChaseTarget = t; }
+    public void ClearChaseTarget() { aiChaseTarget = null; }
     public bool IsDead { get { return isDead; } }
     public Vector3 SpawnPosition { get; private set; }
 
@@ -125,6 +160,7 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     {
         health = GetComponent<Health>();
         if (health == null) health = gameObject.AddComponent<Health>();
+        SetupNavMeshAgent();
         allDemons.Add(this);
 
         sqrAttackRange = attackRange * attackRange;
@@ -214,6 +250,9 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
             UpdateAnimation();
             return;
         }
+        // Old state-machine AI runs only when behaviour AI is off
+        if (!useBehaviourAI)
+        {
         if (targetNPC == null || targetNPC.IsDead) return;
 
         DetermineTarget();
@@ -241,6 +280,42 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
                 float sqrDistToNPC = SqrDistanceTo(targetNPC.transform.position);
                 if (sqrDistToNPC > sqrAttackRange)
                     if (attackLockTimer <= 0f) MoveToward(targetNPC.transform.position);
+            }
+        }
+        }
+
+        // New AI: per-frame chase when target is set by Behaviour model
+        if (useBehaviourAI && aiChaseTarget != null)
+        {
+            currentTarget = aiChaseTarget;
+            
+            if (UseNavMesh)
+            {
+                float sqrDist = SqrDistanceTo(aiChaseTarget.position);
+                if (sqrDist <= sqrAttackRange)
+                {
+                    navAgent.ResetPath();
+                    LookAt(aiChaseTarget);
+                    if (Time.time >= nextAttackTime) Attack();
+                }
+                else
+                {
+                    navAgent.SetDestination(aiChaseTarget.position);
+                    MovementUtility.FaceDirection(transform, aiChaseTarget.position - transform.position, rotationSpeed, Time.deltaTime);
+                }
+            }
+            else
+            {
+            float sqrDist = SqrDistanceTo(aiChaseTarget.position);
+            if (sqrDist <= sqrAttackRange)
+            {
+                LookAt(aiChaseTarget);
+                if (Time.time >= nextAttackTime) Attack();
+            }
+            else
+            {
+                if (attackLockTimer <= 0f) MoveToward(aiChaseTarget.position);
+            }
             }
         }
 
@@ -313,6 +388,12 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
 
     private void MoveToward(Vector3 targetPos)
     {
+        if (UseNavMesh)
+        {
+            navAgent.SetDestination(targetPos);
+            MovementUtility.FaceDirection(transform, targetPos - transform.position, rotationSpeed, Time.deltaTime);
+            return;
+        }
         Vector3 toTarget = targetPos - transform.position;
         toTarget.y = 0f;
         MovementUtility.FaceDirection(transform, toTarget, rotationSpeed, Time.deltaTime);
@@ -377,7 +458,7 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
         OnDeath?.Invoke(this);
 
         // Disappear after 1 second (allow death animation to play)
-        Destroy(gameObject, 1f);
+        if (!useBehaviourAI) Destroy(gameObject, 1f);
 
 
 
@@ -416,6 +497,15 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     public void RegisterAttacker(Transform attacker) { attackerTransform = attacker; }
     public void ClearAttacker() { attackerTransform = null; }
 
+    // --- Public action wrappers for Behaviour AI ---
+    public void PerformChase(Transform target)
+    {
+        // Just sets the target — actual movement happens in Update() every frame
+        SetChaseTarget(target);
+    }
+    public void PerformPatrol() { UpdatePatrol(); }
+    public void PerformIdle() { ClearChaseTarget(); }
+
     /// <summary>
     /// Start a countdown until this minion dies (used when NPC reaches the altar).
     /// </summary>
@@ -428,7 +518,11 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     private IEnumerator AltarDeathDelay()
     {
         yield return new WaitForSeconds(altarDeathDelay);
-        if (!isDead) OnHealthDepleted();
+        if (!isDead)
+        {
+            OnHealthDepleted();
+            Destroy(gameObject, 1f); // altar death always destroys
+        }
     }
 
     /// <summary>

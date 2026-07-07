@@ -60,6 +60,7 @@
  *   - 到达终点后触发 OnArrived 事件
  */
 using UnityEngine;
+using UnityEngine.AI;
 
 [RequireComponent(typeof(Health))]
 public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
@@ -116,6 +117,13 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
     [SerializeField] private float stuckCheckInterval = 3f;
     [SerializeField] private float stuckThreshold = 0.3f;
 
+    [Header("Behaviour AI")]
+    [Tooltip("When true, BehaviourModelBase drives decisions; old hardcoded logic is skipped.")]
+    [SerializeField] private bool useBehaviourAI = false;
+    [System.NonSerialized] public string recommendedAction = "Walk";
+
+    public bool IsBehaviourAIEnabled { get { return useBehaviourAI; } }
+
     [Header("Animation")]
     [SerializeField] private Animator animator;
     [SerializeField] private string isMovingParam = "IsMoving";
@@ -149,6 +157,8 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
     private float pauseIntervalDistance;
 
     private CharacterController cc;
+    private NavMeshAgent navAgent;
+    private bool navMeshReady;
     
     #endregion
 
@@ -161,6 +171,9 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
     public bool IsWalking { get { return isWalking; } }
     public float HealCooldown { get { return healCooldown; } }
     public float NextHealTime { get { return nextHealTime; } }
+    public float HealRange { get { return healRange; } }
+    /// <summary>Whether NavMeshAgent is available, enabled, and on a valid NavMesh.</summary>
+    public bool UseNavMesh { get { return navMeshReady && navAgent != null && navAgent.isActiveAndEnabled && navAgent.isOnNavMesh; } }
     public float CurrentMoveSpeed { get { return currentMoveSpeed; } }
     public int CurrentWaypointIndex { get { return currentWaypointIndex; } }
     public WaypointPath WaypointPath { get { return waypointPath; } }
@@ -175,6 +188,18 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
 
     private void Awake()
     {
+        navAgent = GetComponent<NavMeshAgent>();
+        if (navAgent != null)
+        {
+            NavMeshHit navHit;
+            if (NavMesh.SamplePosition(transform.position, out navHit, 5f, NavMesh.AllAreas))
+            {
+                navAgent.Warp(navHit.position);
+                navMeshReady = navAgent.isOnNavMesh;
+            }
+            if (navAgent.isOnNavMesh)
+                navAgent.stoppingDistance = Mathf.Min(navAgent.stoppingDistance, 0.5f);
+        }
         health = GetComponent<Health>();
         health.SetMaxHealth(maxHealth);
         health.ResetToFull();
@@ -244,13 +269,29 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
 
     private void Update()
     {
+        // Stop NavMeshAgent when paused or healing
+        if (UseNavMesh && (pauseTimer > 0f || isHealing || !isWalking || IsDead || hasArrived))
+        {
+            if (navAgent.hasPath) navAgent.ResetPath();
+        }
 
         // Damage slow
         if (damageSlowTimer > 0f) damageSlowTimer -= Time.deltaTime;
 
         // Check auto-heal
-        if (Time.time >= nextHealTime && !isHealing && !IsDead && !hasArrived)
-            CheckAutoHeal();
+        if (!useBehaviourAI)
+        {
+            if (Time.time >= nextHealTime && !isHealing && !IsDead && !hasArrived)
+                CheckAutoHeal();
+        }
+        else
+        {
+            if (!isHealing && !IsDead && !hasArrived && recommendedAction == "Heal"
+                && Time.time >= nextHealTime)
+            {
+                StartHealCast();
+            }
+        }
 
         // Heal casting update
         if (isHealing) UpdateHealCast();
@@ -261,6 +302,10 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
         // Movement
         if (isWalking && !IsDead && !hasArrived && !isHealing)
         {
+            // Behaviour AI: pause recommendation
+            if (useBehaviourAI && pauseTimer <= 0f && recommendedAction == "Pause")
+                pauseTimer = Random.Range(2f, 4f);
+
             if (pauseTimer > 0f)
             {
                 pauseTimer -= Time.deltaTime;
@@ -268,33 +313,42 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
             else
             {
                 Vector3 target = currentWaypointFloatTarget;
+                float currentSpeed = damageSlowTimer > 0f ? currentMoveSpeed * damageSlowMultiplier : currentMoveSpeed;
+                if (UseNavMesh)
+                {
+                    navAgent.speed = currentSpeed;
+                    navAgent.SetDestination(target);
+                }
+                else
+                {
                 Vector3 toTarget = target - transform.position;
                 toTarget.y = 0f;
 
                 Vector3 avoid = GetObstacleAvoidance(toTarget);
                 Vector3 moveDir = (toTarget.normalized + avoid * obstacleAvoidStrength).normalized;
 
-                bool isDamageSlowed = damageSlowTimer > 0f;
-                float speed = isDamageSlowed ? currentMoveSpeed * damageSlowMultiplier : currentMoveSpeed;
+                float speed = currentSpeed;
                 Vector3 nd = moveDir * speed * Time.deltaTime;
                 nd.y = cc.isGrounded ? -0.1f : nd.y - 9.81f * Time.deltaTime;
                 cc.Move(nd);
 
                 if (moveDir.sqrMagnitude > 0.001f)
                     MovementUtility.FaceDirection(transform, moveDir, rotationSpeed, Time.deltaTime);
+                }
 
                 float distToTarget = FlatDistanceTo(target);
 
                 if (distToTarget <= waypointPath.ArriveDistance)
                     OnWaypointReached();
 
-                float movedThisFrame = speed * Time.deltaTime;
+                float movedThisFrame = currentSpeed * Time.deltaTime;
+                if (UseNavMesh) movedThisFrame = Mathf.Max(navAgent.velocity.magnitude, 0.01f) * Time.deltaTime;
                 distanceSinceLastPause += movedThisFrame;
-                TrackPauseSchedule();
+                if (!useBehaviourAI) TrackPauseSchedule();
             }
         }
 
-        UpdateStuckCheck();
+        if (!useBehaviourAI) UpdateStuckCheck();
         UpdateAnimation();
     }
 

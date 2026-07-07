@@ -8,6 +8,7 @@ using UnityEngine;
 [RequireComponent(typeof(PlayerMove))]
 [RequireComponent(typeof(PlayerCombat))]
 [RequireComponent(typeof(PlayerHealth))]
+[RequireComponent(typeof(Health))]
 public class PlayerBehaviourModel : BehaviourModelBase
 {
     [Header("Behaviours — toggle each action on/off")]
@@ -21,6 +22,7 @@ public class PlayerBehaviourModel : BehaviourModelBase
     private PlayerMove player;
     private PlayerCombat combat;
     private PlayerHealth health;
+    private Health healthComp;
 
     private NPCGoddess cachedNPC;
     private PlayerMove cachedPlayer1;
@@ -30,6 +32,10 @@ public class PlayerBehaviourModel : BehaviourModelBase
         player = GetComponent<PlayerMove>();
         combat = GetComponent<PlayerCombat>();
         health = GetComponent<PlayerHealth>();
+        healthComp = GetComponent<Health>();
+        // Disable old AI controller to prevent both systems from fighting
+        var oldAI = GetComponent<PlayerAIController>();
+        if (oldAI != null) oldAI.enabled = false;
         player.SetPlayerAI(true);
         base.Awake();
     }
@@ -56,6 +62,9 @@ public class PlayerBehaviourModel : BehaviourModelBase
         ctx.healthAbsolute = health != null ? health.CurrentHealth : 0f;
         ctx.position = transform.position;
 
+        // Phase 1: short-term memory
+        ctx.timeSinceLastDamaged = healthComp != null ? healthComp.TimeSinceLastDamage : float.MaxValue;
+
         ctx.allDemons = new List<DemonMinion>(DemonMinion.AllDemons);
         ctx.nearbyEnemyCount = 0;
         ctx.totalEnemyHealth = 0f;
@@ -73,6 +82,18 @@ public class PlayerBehaviourModel : BehaviourModelBase
                 ctx.totalEnemyHealth += e.CurrentHealth;
                 if (sqrDist < nearestSqr) { nearestSqr = sqrDist; ctx.nearestEnemyDistance = Mathf.Sqrt(sqrDist); }
             }
+        }
+
+        // Phase 1: group perception
+        ctx.nearbyAllyCount = 0;
+        if (card == null) return ctx;
+        float allyRangeSqr = (card.aggroRange * 1.5f) * (card.aggroRange * 1.5f);
+        foreach (var p in PlayerMove.AllPlayers)
+        {
+            if (p == null || p.IsDead || p == player) continue;
+            float dx = transform.position.x - p.transform.position.x;
+            float dz = transform.position.z - p.transform.position.z;
+            if (dx * dx + dz * dz < allyRangeSqr) ctx.nearbyAllyCount++;
         }
 
         if (cachedNPC == null || cachedNPC.IsDead)
@@ -102,6 +123,8 @@ public class PlayerBehaviourModel : BehaviourModelBase
 
         float threat = ctx.nearbyEnemyCount * 0.15f;
         threat += (1f - ctx.healthPercent) * 0.3f;
+        if (ctx.timeSinceLastDamaged < 5f)
+            threat += (1f - ctx.timeSinceLastDamaged / 5f) * 0.25f;
         if (ctx.totalEnemyHealth > ctx.healthAbsolute && ctx.healthAbsolute > 0f) threat += 0.2f;
         ctx.threatLevel = Mathf.Clamp01(threat);
 

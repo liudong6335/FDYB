@@ -18,6 +18,7 @@ MonoBehaviour:
   caution: 0.5
   supportiveness: 0.7
   independence: 0.3
+  greed: 0.4
   preferredRange: 0.4
   focusFire: 0.7
   potionThreshold: 0.5
@@ -26,3 +27,4 @@ MonoBehaviour:
   kiteHealthThreshold: 0.6
   npcPullRadius: 12
   fleeHealthThreshold: 0.3
+  lootRadius: 12

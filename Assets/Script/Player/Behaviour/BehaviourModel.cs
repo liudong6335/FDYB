@@ -32,6 +32,7 @@ public class BehaviourModel : MonoBehaviour
         actions.Add(new AttackAction());
         actions.Add(new KiteAction());
         actions.Add(new HealAction());
+        actions.Add(new LootAction());
         actions.Add(new FleeAction());
         actions.Add(new FollowNPCAction());
     }
@@ -113,7 +114,6 @@ public class BehaviourModel : MonoBehaviour
         if (ctx.totalEnemyHealth > ctx.healthAbsolute && ctx.healthAbsolute > 0f) threat += 0.2f;
         ctx.threatLevel = Mathf.Clamp01(threat);
 
-        // Potions
         ctx.potionCount = 0;
         var inv = InventoryManager.Instance;
         if (inv != null)

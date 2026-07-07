@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// Semi-automatic AI controller for the secondary player (P2).
@@ -47,7 +47,7 @@ public class PlayerAIController : MonoBehaviour
 
     private void Start()
     {
-        var allPlayers = FindObjectsByType<PlayerMove>(FindObjectsSortMode.None);
+        var allPlayers = PlayerMove.AllPlayers;
         foreach (var p in allPlayers)
         {
             if (p != aiPlayer) { player1 = p; break; }
@@ -129,8 +129,7 @@ public class PlayerAIController : MonoBehaviour
     {
         float sqrRange = aggroRange * aggroRange;
         int count = 0;
-        var enemies = FindObjectsByType<DemonMinion>(FindObjectsSortMode.None);
-        foreach (var e in enemies)
+        foreach (var e in DemonMinion.AllDemons)
         {
             if (e == null || e.IsDead) continue;
             float dx = transform.position.x - e.transform.position.x;
@@ -145,8 +144,7 @@ public class PlayerAIController : MonoBehaviour
     {
         float total = 0f;
         float sqrRange = aggroRange * aggroRange;
-        var enemies = FindObjectsByType<DemonMinion>(FindObjectsSortMode.None);
-        foreach (var e in enemies)
+        foreach (var e in DemonMinion.AllDemons)
         {
             if (e == null || e.IsDead) continue;
             float dx = transform.position.x - e.transform.position.x;
@@ -160,8 +158,7 @@ public class PlayerAIController : MonoBehaviour
     private bool TryAttackOneShotEnemy(float damage)
     {
         float sqrRange = aggroRange * aggroRange;
-        var enemies = FindObjectsByType<DemonMinion>(FindObjectsSortMode.None);
-        foreach (var e in enemies)
+        foreach (var e in DemonMinion.AllDemons)
         {
             if (e == null || e.IsDead) continue;
             float dx = transform.position.x - e.transform.position.x;
@@ -180,8 +177,7 @@ public class PlayerAIController : MonoBehaviour
         float sqrRange = aggroRange * aggroRange;
         float lowestHP = float.MaxValue;
         Transform weakest = null;
-        var enemies = FindObjectsByType<DemonMinion>(FindObjectsSortMode.None);
-        foreach (var e in enemies)
+        foreach (var e in DemonMinion.AllDemons)
         {
             if (e == null || e.IsDead) continue;
             float dx = transform.position.x - e.transform.position.x;
@@ -259,8 +255,7 @@ public class PlayerAIController : MonoBehaviour
         float nearestSqr = npcSqr;
         Transform nearest = null;
 
-        var enemies = FindObjectsByType<DemonMinion>(FindObjectsSortMode.None);
-        foreach (var e in enemies)
+        foreach (var e in DemonMinion.AllDemons)
         {
             if (e == null || e.IsDead) continue;
 
@@ -291,10 +286,9 @@ public class PlayerAIController : MonoBehaviour
 
     private bool TryAttackNearbyEnemy()
     {
-        var enemies = FindObjectsByType<DemonMinion>(FindObjectsSortMode.None);
         Transform nearestTarget = null;
         float nearestSqr = aggroRange * aggroRange;
-        foreach (var e in enemies)
+        foreach (var e in DemonMinion.AllDemons)
         {
             if (e == null || e.IsDead) continue;
             float dx = transform.position.x - e.transform.position.x;
@@ -338,3 +332,4 @@ public class PlayerAIController : MonoBehaviour
         }
     }
 }
+

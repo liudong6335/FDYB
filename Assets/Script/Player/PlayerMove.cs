@@ -35,6 +35,7 @@
  */
 using UnityEngine;
 using UnityEngine.EventSystems;
+using System.Collections.Generic;
 
 [RequireComponent(typeof(PlayerHealth))]
 [RequireComponent(typeof(PlayerCombat))]
@@ -63,6 +64,9 @@ public class PlayerMove : MonoBehaviour, IDamageable
 
     #region Private State
 
+    private static readonly List<PlayerMove> allPlayers = new List<PlayerMove>();
+    public static IReadOnlyList<PlayerMove> AllPlayers => allPlayers;
+
     private PlayerHealth playerHealth;
     private PlayerCombat playerCombat;
     private CharacterController cc;
@@ -75,6 +79,9 @@ public class PlayerMove : MonoBehaviour, IDamageable
     private bool isSpeedBoosted;
     private float speedBoostEndTime;
     private float speedBoostNextTime;
+
+    private Vector3 keyboardDirection;
+    public bool IsKeyboardMoving => keyboardDirection.sqrMagnitude > 0.1f;
 
     #endregion
 
@@ -91,6 +98,7 @@ public class PlayerMove : MonoBehaviour, IDamageable
     public bool IsDead { get { return playerHealth == null || playerHealth.CurrentHealth <= 0f; } }
     public float EffectiveMaxHealth { get { return playerHealth != null ? playerHealth.EffectiveMaxHealth : 0f; } }
     public void TakeDamage(float dmg) { playerHealth?.TakeDamage(dmg); }
+    public void Heal(float amount) { playerHealth?.TakeDamage(-amount); }
     public float BaseDamage { get { return playerHealth != null ? playerHealth.BaseDamage : 0f; } set { if (playerHealth != null) playerHealth.BaseDamage = value; } }
     public float DamageMultiplier { get { return playerHealth != null ? playerHealth.DamageMultiplier : 1f; } set { if (playerHealth != null) playerHealth.DamageMultiplier = value; } }
     public float MaxHealthBonus { get { return playerHealth != null ? playerHealth.MaxHealthBonus : 0f; } set { if (playerHealth != null) playerHealth.MaxHealthBonus = value; } }
@@ -200,6 +208,12 @@ public class PlayerMove : MonoBehaviour, IDamageable
         speedBoostNextTime = Time.time + speedBoostCooldown;
     }
 
+    public void TryActivateSpeedBoost()
+    {
+        if (Time.time >= speedBoostNextTime)
+            ActivateSpeedBoost();
+    }
+
     private float GetEffectiveSpeed()
     {
         return moveSpeed * SpeedMultiplier * (isSpeedBoosted ? speedBoostMultiplier : 1f);
@@ -226,6 +240,16 @@ public class PlayerMove : MonoBehaviour, IDamageable
         if (playerCombat != null) playerCombat.ClearTarget();
         hasMoveCommand = false;
         moveDestination = transform.position;
+    }
+
+    public void SetKeyboardMove(Vector3 dir)
+    {
+        keyboardDirection = dir;
+        if (dir.sqrMagnitude > 0.1f)
+        {
+            hasMoveCommand = false;
+            playerCombat.ClearTarget();
+        }
     }
 
     #endregion
@@ -299,5 +323,13 @@ public class PlayerMove : MonoBehaviour, IDamageable
     }
 
     #endregion
+    private void OnDestroy()
+    {
+        allPlayers.Remove(this);
+    }
+
 }
+
+
+
 

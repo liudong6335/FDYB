@@ -149,8 +149,7 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
     private float pauseIntervalDistance;
 
     private CharacterController cc;
-    private PlayerMove[] cachedPlayers;
-    private float playerCacheTimer;
+    
     #endregion
 
     public float CurrentHealth { get { return health != null ? health.CurrentHealth : 0f; } }
@@ -245,13 +244,6 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
 
     private void Update()
     {
-        // Cache players periodically
-        playerCacheTimer -= Time.deltaTime;
-        if (playerCacheTimer <= 0f)
-        {
-            cachedPlayers = FindObjectsByType<PlayerMove>(FindObjectsSortMode.None);
-            playerCacheTimer = 1f;
-        }
 
         // Damage slow
         if (damageSlowTimer > 0f) damageSlowTimer -= Time.deltaTime;
@@ -318,12 +310,12 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
         }
 
         // Heal player: own HP >= 400, find players with HP < 600
-        if (HealthPercent >= selfHealThresholdPercent && cachedPlayers != null)
+        if (HealthPercent >= selfHealThresholdPercent)
         {
             PlayerMove bestTarget = null;
             float bestDist = float.MaxValue;
 
-            foreach (var p in cachedPlayers)
+            foreach (var p in PlayerMove.AllPlayers)
             {
                 if (p == null || p.CurrentHealth <= 0f) continue;
                 if (p.HealthPercent >= playerHealThresholdPercent) continue;
@@ -422,6 +414,8 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
         }
     }
 
+    public void Heal(float amount) { health.Heal(amount); }
+
     public void TakeDamage(float dmg)
     {
         if (IsDead || hasArrived) return;
@@ -487,19 +481,16 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
         health.Heal(healAmount);
 
         // Also heal nearby players
-        if (cachedPlayers != null)
-        {
-            foreach (var p in cachedPlayers)
+            foreach (var p in PlayerMove.AllPlayers)
             {
                 if (p == null || p.CurrentHealth <= 0f) continue;
                 float dist = FlatDistanceTo(p.transform.position);
                 if (dist <= healRange && p.CurrentHealth < p.EffectiveMaxHealth)
                 {
                     // Heal the player too (always heals NPC + nearby players)
-                    p.TakeDamage(-healAmount);
+                    p.Heal(healAmount);
                 }
             }
-        }
 
         OnHealComplete?.Invoke();
     }
@@ -551,4 +542,7 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
         Gizmos.DrawWireSphere(origin + fwd, obstacleCheckRadius);
     }
 }
+
+
+
 

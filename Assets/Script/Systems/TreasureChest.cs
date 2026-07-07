@@ -49,9 +49,6 @@ public class TreasureChest : MonoBehaviour
     private PlayerMove openingPlayer;
     private float currentOpenTimer;
     private InventoryManager cachedInventory;
-    private static PlayerMove[] cachedPlayers;
-    private static float playerCacheTime;
-    private const float PlayerCacheInterval = 1f;
 
     private float sqrInteractDistance;
     private float sqrInteractPadding;
@@ -97,16 +94,10 @@ public class TreasureChest : MonoBehaviour
 
     public void TryInteract()
     {
-        if (Time.time - playerCacheTime > PlayerCacheInterval || cachedPlayers == null)
-        {
-            cachedPlayers = FindObjectsByType<PlayerMove>(FindObjectsSortMode.None);
-            playerCacheTime = Time.time;
-        }
-
         PlayerMove nearest = null;
         float nearestSqrDist = float.MaxValue;
 
-        foreach (var p in cachedPlayers)
+        foreach (var p in PlayerMove.AllPlayers)
         {
             if (p == null) continue;
             float d = SqrDistanceTo(p.transform.position);
@@ -247,3 +238,4 @@ public class TreasureChest : MonoBehaviour
         Gizmos.DrawWireSphere(transform.position, interactDistance);
     }
 }
+

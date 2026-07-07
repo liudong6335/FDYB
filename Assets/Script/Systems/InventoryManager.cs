@@ -58,6 +58,9 @@ public class GameItem
     // Currency
     public int goldAmount;
 
+    // Optional link to ScriptableObject definition
+    public GameItemDefinition definition;
+
     public GameItem Clone()
     {
         return new GameItem
@@ -71,7 +74,8 @@ public class GameItem
             statType = statType,
             statValue = statValue,
             healAmount = healAmount,
-            goldAmount = goldAmount
+            goldAmount = goldAmount,
+            definition = definition
         };
     }
 
@@ -251,7 +255,7 @@ public class InventoryManager : MonoBehaviour
             // Heal effect
             if (item.healAmount > 0)
             {
-                player.TakeDamage(-item.healAmount); // Negative damage = heal
+                player.Heal(item.healAmount);
             }
             OnInventoryChanged?.Invoke();
         }
@@ -308,4 +312,6 @@ public class InventoryManager : MonoBehaviour
     public int P1Gold { get { return p1Gold; } }
     public int P2Gold { get { return p2Gold; } }
 }
+
+
 

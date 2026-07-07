@@ -68,22 +68,10 @@ public class UGUIFloatingHealthBar : MonoBehaviour
     private float totalW, totalH;
 
     // Shared overlay canvas
-    private static Canvas sharedCanvas;
-    private static RectTransform sharedCanvasRect;
 
     #endregion
 
-    private static Sprite whiteSprite;
 
-    private static Sprite GetWhiteSprite()
-    {
-        if (whiteSprite != null) return whiteSprite;
-        var tex = new Texture2D(1, 1);
-        tex.SetPixel(0, 0, Color.white);
-        tex.Apply();
-        whiteSprite = Sprite.Create(tex, new Rect(0, 0, 1, 1), new Vector2(0.5f, 0.5f));
-        return whiteSprite;
-    }
 
     private void Awake()
     {
@@ -103,43 +91,15 @@ public class UGUIFloatingHealthBar : MonoBehaviour
                 ?? GetComponentInParent<IHealthProvider>()
                 ?? GetComponentInChildren<IHealthProvider>();
 
-        EnsureSharedCanvas();
+        HealthBarCanvas.EnsureSharedCanvas();
         BuildBar();
     }
 
-    private static void EnsureSharedCanvas()
-    {
-        if (sharedCanvas != null) return;
-
-        // Domain reload or script rebuild may have reset static sharedCanvas,
-        // but the DontDestroyOnLoad HealthBarsCanvas GameObject may still exist.
-        // If so, reuse it instead of creating a duplicate.
-        var existing = GameObject.Find("HealthBarsCanvas");
-        if (existing != null)
-        {
-            sharedCanvas = existing.GetComponent<Canvas>();
-            sharedCanvasRect = existing.GetComponent<RectTransform>();
-            return;
-        }
-
-        var go = new GameObject("HealthBarsCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
-        DontDestroyOnLoad(go);
-        sharedCanvas = go.GetComponent<Canvas>();
-        sharedCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        sharedCanvas.sortingOrder = 90;
-
-        var scaler = go.GetComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
-        scaler.matchWidthOrHeight = 0.5f;
-
-        sharedCanvasRect = go.GetComponent<RectTransform>();
-    }
 
     private void BuildBar()
     {
         // Destroy any lingering panel from a previous scene load (DontDestroyOnLoad canvas)
-        var oldPanel = sharedCanvasRect.Find("HB_" + gameObject.name);
+        var oldPanel = HealthBarCanvas.SharedCanvasRect.Find("HB_" + gameObject.name);
         if (oldPanel != null) GameObject.DestroyImmediate(oldPanel.gameObject);
 
         Debug.Log("[UGUIFloatingHealthBar] BuildBar for: " + gameObject.name + " | path: " + GetFullPath() + " | ID: " + gameObject.GetInstanceID());
@@ -148,18 +108,21 @@ public class UGUIFloatingHealthBar : MonoBehaviour
 
         // Panel root
         var panelGo = new GameObject("HB_" + gameObject.name, typeof(RectTransform));
-        panelGo.transform.SetParent(sharedCanvasRect, false);
+        panelGo.transform.SetParent(HealthBarCanvas.SharedCanvasRect, false);
         panelRect = panelGo.GetComponent<RectTransform>();
         panelRect.sizeDelta = new Vector2(totalW, totalH);
 
         // Frame
-        var frame = MakeImage("Frame", panelRect, frameColor);
-        frame.sprite = GetWhiteSprite();
-        Stretch(frame.rectTransform);
+        var frame = UIHelpers.MakeImage("Frame", panelRect, frameColor);
+        frame.sprite = HealthBarCanvas.GetWhiteSprite();
+            frame.rectTransform.anchorMin = Vector2.zero;
+            frame.rectTransform.anchorMax = Vector2.one;
+            frame.rectTransform.offsetMin = Vector2.zero;
+            frame.rectTransform.offsetMax = Vector2.zero;
 
         // Background
-        var bg = MakeImage("Bg", frame.rectTransform, bgColor);
-        bg.sprite = GetWhiteSprite();
+        var bg = UIHelpers.MakeImage("Bg", frame.rectTransform, bgColor);
+        bg.sprite = HealthBarCanvas.GetWhiteSprite();
         var bgRt = bg.rectTransform;
         bgRt.anchorMin = Vector2.zero;
         bgRt.anchorMax = Vector2.one;
@@ -167,37 +130,21 @@ public class UGUIFloatingHealthBar : MonoBehaviour
         bgRt.offsetMax = new Vector2(-borderThick, -borderThick);
 
         // Fill
-        fillImage = MakeImage("Fill", bgRt, highColor);
-        fillImage.sprite = GetWhiteSprite();
+        fillImage = UIHelpers.MakeImage("Fill", bgRt, highColor);
+        fillImage.sprite = HealthBarCanvas.GetWhiteSprite();
         var fillRt = fillImage.rectTransform;
         fillRt.anchorMin = Vector2.zero;
         fillRt.anchorMax = Vector2.one;
         fillRt.offsetMin = Vector2.zero;
         fillRt.offsetMax = Vector2.zero;
-        fillImage.sprite = GetWhiteSprite();
+        fillImage.sprite = HealthBarCanvas.GetWhiteSprite();
         fillImage.type = Image.Type.Filled;
         fillImage.fillMethod = Image.FillMethod.Horizontal;
         fillImage.fillOrigin = 0;
         fillImage.fillAmount = 1f;
     }
 
-    private Image MakeImage(string name, Transform parent, Color color)
-    {
-        var go = new GameObject(name, typeof(RectTransform), typeof(Image));
-        go.transform.SetParent(parent, false);
-        var img = go.GetComponent<Image>();
-        img.color = color;
-        img.raycastTarget = false;
-        return img;
-    }
 
-    private static void Stretch(RectTransform rt)
-    {
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.one;
-        rt.offsetMin = Vector2.zero;
-        rt.offsetMax = Vector2.zero;
-    }
 
     private void LateUpdate()
     {
@@ -235,7 +182,7 @@ public class UGUIFloatingHealthBar : MonoBehaviour
         // Convert to canvas-space (Screen.height - y for overlay)
         Vector2 anchoredPos;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            sharedCanvasRect, screenPos, null, out anchoredPos);
+            HealthBarCanvas.SharedCanvasRect, screenPos, null, out anchoredPos);
         panelRect.anchoredPosition = anchoredPos;
     }
 
@@ -270,4 +217,6 @@ public class UGUIFloatingHealthBar : MonoBehaviour
         return path;
     }
 }
+
+
 

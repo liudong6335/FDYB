@@ -33,6 +33,7 @@ public class Projectile : MonoBehaviour
     private Vector3 startPosition;
     private LayerMask targetMask;
     private bool initialized;
+    private bool hasHit;
 
     public void Initialize(Vector3 targetPosition, float dmg, LayerMask mask)
     {
@@ -74,6 +75,8 @@ public class Projectile : MonoBehaviour
         // Check hit
         if (Physics.Raycast(transform.position - direction * step * 0.5f, direction, out RaycastHit hit, step, targetMask, QueryTriggerInteraction.Collide))
         {
+            if (hasHit) return;
+            hasHit = true;
             ApplyDamage(hit.collider);
             Destroy(gameObject);
             return;
@@ -96,6 +99,8 @@ public class Projectile : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         if (!initialized) return;
+        if (hasHit) return;
+        hasHit = true;
         if ((targetMask.value & (1 << other.gameObject.layer)) != 0)
         {
             ApplyDamage(other);

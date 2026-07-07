@@ -41,6 +41,7 @@
  */
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 [RequireComponent(typeof(Health))]
 public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
@@ -95,9 +96,9 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     private Renderer[] cachedRenderers;
     private Transform attackerTransform;
 
-    private PlayerMove[] cachedPlayers;
-    private float playerCacheTimer;
-    private static readonly float PlayerCacheInterval = 1f;
+
+
+
 
     // Squared distances for cheap comparisons
     private float sqrAttackRange;
@@ -105,6 +106,8 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     private float sqrDisengageDistance;
 
     private static int aliveCount;
+    private static readonly List<DemonMinion> allDemons = new List<DemonMinion>();
+    public static IReadOnlyList<DemonMinion> AllDemons => allDemons;
     public static int AliveCount { get { return aliveCount; } }
     public static int MaxCount = 4;
 
@@ -122,6 +125,7 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     {
         health = GetComponent<Health>();
         if (health == null) health = gameObject.AddComponent<Health>();
+        allDemons.Add(this);
 
         sqrAttackRange = attackRange * attackRange;
         sqrAggroRange = aggroRange * aggroRange;
@@ -198,6 +202,7 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     private void OnDestroy()
     {
         if (!isDead && initialized) aliveCount--;
+        allDemons.Remove(this);
     }
 
 
@@ -210,14 +215,6 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
             return;
         }
         if (targetNPC == null || targetNPC.IsDead) return;
-
-        // Periodic player cache refresh
-        playerCacheTimer -= Time.deltaTime;
-        if (playerCacheTimer <= 0f)
-        {
-            cachedPlayers = FindObjectsByType<PlayerMove>(FindObjectsSortMode.None);
-            playerCacheTimer = PlayerCacheInterval;
-        }
 
         DetermineTarget();
         if (currentTarget != null)
@@ -275,9 +272,9 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
                 PlayerMove nearest = null;
                 float nearestSqrDist = float.MaxValue;
 
-                if (cachedPlayers != null)
+
                 {
-                    foreach (var p in cachedPlayers)
+                    foreach (var p in PlayerMove.AllPlayers)
                     {
                         if (p == null || p.CurrentHealth <= 0f) continue;
                         float d = SqrDistanceTo(p.transform.position);
@@ -350,6 +347,8 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
         }
     }
 
+    public void Heal(float amount) { if (health != null) health.Heal(amount); }
+
     public void TakeDamage(float dmg)
     {
         if (isDead || health == null) return;
@@ -379,11 +378,11 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
 
         // Disappear after 1 second (allow death animation to play)
         Destroy(gameObject, 1f);
-        {
-            animator.ResetTrigger(deathParam); animator.SetTrigger(deathParam);
-            animator.SetBool(isMovingParam, false);
-        }
-        OnDeath?.Invoke(this);
+
+
+
+
+
     }
 
     /// <summary>Revive this demon in place with +1 level.</summary>
@@ -570,5 +569,6 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
         }
     }
 }
+
 
 

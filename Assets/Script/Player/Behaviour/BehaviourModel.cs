@@ -29,6 +29,9 @@ public class BehaviourModel : MonoBehaviour
     private NPCGoddess cachedNPC;
     private PlayerMove cachedPlayer1;
 
+    // Debug data — populated each tick, read by BehaviourDebugger
+    private List<TickResult> lastTickScores = new List<TickResult>();
+
     private void Awake()
     {
         player = GetComponent<PlayerMove>();
@@ -57,18 +60,27 @@ public class BehaviourModel : MonoBehaviour
 
         float bestScore = float.MinValue;
         IAction bestAction = null;
+
+        lastTickScores.Clear();
         foreach (var action in actions)
         {
             float score = action.Evaluate(card, ctx);
+            lastTickScores.Add(new TickResult { actionName = action.Name, score = score });
             if (score > bestScore) { bestScore = score; bestAction = action; }
         }
+        // Mark winner
+        foreach (var t in lastTickScores)
+            t.isWinner = t.score >= bestScore;
+
         bestAction?.Execute(player, combat, ctx, card);
     }
+
+    public List<TickResult> GetLastTickData() => lastTickScores;
+    public string GetCardName() => card != null ? card.characterName : "Unset";
 
     private GameContext BuildContext()
     {
         var ctx = new GameContext();
-
         ctx.healthPercent = health != null ? health.HealthPercent : 1f;
         ctx.healthAbsolute = health != null ? health.CurrentHealth : 0f;
         ctx.position = transform.position;
@@ -120,7 +132,6 @@ public class BehaviourModel : MonoBehaviour
         threat += (1f - ctx.healthPercent) * 0.3f;
         if (ctx.totalEnemyHealth > ctx.healthAbsolute && ctx.healthAbsolute > 0f) threat += 0.2f;
         ctx.threatLevel = Mathf.Clamp01(threat);
-
         ctx.potionCount = 0;
         var inv = InventoryManager.Instance;
         if (inv != null)
@@ -128,7 +139,6 @@ public class BehaviourModel : MonoBehaviour
             ctx.potionCount += inv.GetP1Backpack().FindAll(i => i.itemId == "health_potion_1" && i.itemType == ItemType.Consumable).Count;
             ctx.potionCount += inv.GetP2Backpack().FindAll(i => i.itemId == "health_potion_1" && i.itemType == ItemType.Consumable).Count;
         }
-
         return ctx;
     }
 }

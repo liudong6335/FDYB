@@ -342,7 +342,7 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
             }
             else
             {
-                Vector3 target;
+        Vector3 target = Vector3.zero;
                 // --- Target management: zone or deviation ---
                 if (isDeviating)
                 {

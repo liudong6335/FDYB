@@ -27,7 +27,6 @@ public class AttackAction : IAction
 
         // SelfPreservation penalty (old - kept for backward compat)
         score += ctx.nearbyEnemyCount * 0.03f;
-        score += ctx.nearbyAllyCount * 0.06f * card.supportiveness;
 
         // Revenge: if just hit (< 2s ago), fight back harder
         if (ctx.timeSinceLastDamaged < 2f)
@@ -82,5 +81,6 @@ public class AttackAction : IAction
         }
     }
 }
+
 
 

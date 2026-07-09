@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.EventSystems;
 
 /// <summary>
@@ -29,7 +29,7 @@ public class PlayerInputController : MonoBehaviour
 
     private void Update()
     {
-        if (playerMove == null || playerMove.IsDead) return;
+        if (playerMove == null || playerMove.IsDead || playerMove.IsPlayerAI) return;
 
         HandleMouseInput();
         HandleKeyboardMovement();
@@ -43,7 +43,7 @@ public class PlayerInputController : MonoBehaviour
 
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
 
-        // Click enemy → engage combat
+        // Click enemy 鈫?engage combat
         if (playerCombat.EnemyLayerMask.value != 0 &&
             Physics.Raycast(ray, out RaycastHit enemyHit, 500f, playerCombat.EnemyLayerMask, QueryTriggerInteraction.Collide))
         {
@@ -53,7 +53,7 @@ public class PlayerInputController : MonoBehaviour
             return;
         }
 
-        // Click ground → move
+        // Click ground 鈫?move
         if (Physics.Raycast(ray, out RaycastHit groundHit, 500f, groundLayer, QueryTriggerInteraction.Ignore))
         {
             playerCombat.ClearTarget();
@@ -78,3 +78,6 @@ public class PlayerInputController : MonoBehaviour
             playerMove.TryActivateSpeedBoost();
     }
 }
+
+
+

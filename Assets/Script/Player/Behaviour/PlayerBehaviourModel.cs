@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -11,7 +11,7 @@ using UnityEngine;
 [RequireComponent(typeof(Health))]
 public class PlayerBehaviourModel : BehaviourModelBase
 {
-    [Header("Behaviours — toggle each action on/off")]
+    [Header("Behaviours 鈥?toggle each action on/off")]
     [SerializeField] private bool enableAttack = true;
     [SerializeField] private bool enableKite = true;
     [SerializeField] private bool enableHeal = true;
@@ -130,11 +130,12 @@ public class PlayerBehaviourModel : BehaviourModelBase
 
         ctx.potionCount = 0;
         var inv = InventoryManager.Instance;
-        if (inv != null)
+        if (inv != null && player != null)
         {
-            ctx.potionCount += inv.GetP1Backpack().FindAll(i => i.itemId == "health_potion_1" && i.itemType == ItemType.Consumable).Count;
-            ctx.potionCount += inv.GetP2Backpack().FindAll(i => i.itemId == "health_potion_1" && i.itemType == ItemType.Consumable).Count;
+            ctx.potionCount = inv.GetPlayerBackpack(player)
+                .FindAll(i => i.itemId == "health_potion_1" && i.itemType == ItemType.Consumable).Count;
         }
         return ctx;
     }
 }
+

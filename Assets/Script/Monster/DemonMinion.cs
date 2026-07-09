@@ -96,6 +96,7 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     private float nextAttackTime;
     private bool isDead;
     private bool isRespawning;
+    private bool isDormant;
     private bool isMovingInFrame;
     private bool initialized;
     private CharacterController cc;
@@ -285,9 +286,11 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
         }
 
         // New AI: per-frame chase when target is set by Behaviour model
-        if (useBehaviourAI && aiChaseTarget != null)
+        if (useBehaviourAI)
         {
-            currentTarget = aiChaseTarget;
+            if (aiChaseTarget != null)
+            {
+                currentTarget = aiChaseTarget;
             
             if (UseNavMesh)
             {
@@ -316,6 +319,11 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
             {
                 if (attackLockTimer <= 0f) MoveToward(aiChaseTarget.position);
             }
+            }
+            }
+            else
+            {
+                currentTarget = null;
             }
         }
 
@@ -457,13 +465,32 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
         }
         OnDeath?.Invoke(this);
 
-        // Disappear after 1 second (allow death animation to play)
-        if (!useBehaviourAI) Destroy(gameObject, 1f);
+        // Hide after 1 second (allow death animation to play), keep alive for revival
+        if (!useBehaviourAI) StartCoroutine(HideDeadBody());
 
 
 
 
 
+    }
+
+    private System.Collections.IEnumerator HideDeadBody()
+    {
+        yield return new WaitForSeconds(1f);
+        if (!isDead) yield break; // revived during wait, skip hiding
+
+        var renderers = GetComponentsInChildren<SkinnedMeshRenderer>(true);
+        var meshRenderers = GetComponentsInChildren<MeshRenderer>(true);
+        foreach (var r in renderers) if (r != null) r.enabled = false;
+        foreach (var r in meshRenderers) if (r != null) r.enabled = false;
+
+        if (healthBar == null) healthBar = GetComponentInChildren<UGUIFloatingHealthBar>();
+        if (healthBar != null) healthBar.gameObject.SetActive(false);
+
+        if (animator != null) animator.enabled = false;
+
+        var col = GetComponent<Collider>();
+        if (col != null) col.enabled = false;
     }
 
     /// <summary>Revive this demon in place with +1 level.</summary>
@@ -531,6 +558,7 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     public void SetDormant()
     {
         isDead = true;
+        isDormant = true;
         // Disable all renderers so demon is invisible
         // Refresh all renderers (Skinned + regular) including inactive children
         var renderers = GetComponentsInChildren<SkinnedMeshRenderer>(true);
@@ -564,7 +592,7 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     {
         if (!isDead || isRespawning) return;
         isDead = false;
-        aliveCount++;
+        isDormant = false;
         // Refresh all renderers (Skinned + regular) including inactive children
         var renderers = GetComponentsInChildren<SkinnedMeshRenderer>(true);
         var meshRenderers = GetComponentsInChildren<MeshRenderer>(true);
@@ -592,7 +620,7 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
 
     public bool IsDormant
     {
-        get { return isDead && animator != null && !animator.enabled; }
+        get { return isDormant; }
     }
 
     private void UpdatePatrol()
@@ -663,6 +691,12 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
         }
     }
 }
+
+
+
+
+
+
 
 
 

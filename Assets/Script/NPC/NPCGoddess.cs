@@ -82,8 +82,6 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
     [SerializeField] private float speedSmoothTime = 0.8f;
 
     [Header("Waypoint Float")]
-    [SerializeField] private float waypointFloatMin = 0f;
-    [SerializeField] private float waypointFloatMax = 5f;
 
     [Header("Pauses")]
     [SerializeField] private float pausesPerMinute = 2.5f;
@@ -117,6 +115,12 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
     [SerializeField] private float stuckCheckInterval = 3f;
     [SerializeField] private float stuckThreshold = 0.3f;
 
+
+    [Header("Zone Movement")]
+    [SerializeField] private float zoneRadius = 8f;
+    [SerializeField] private float deviationChance = 0.25f;
+    [SerializeField] private float deviationCheckInterval = 5f;
+    [SerializeField] private float deviationMaxDistance = 25f;
     [Header("Behaviour AI")]
     [Tooltip("When true, BehaviourModelBase drives decisions; old hardcoded logic is skipped.")]
     [SerializeField] private bool useBehaviourAI = false;
@@ -151,7 +155,11 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
     private float currentMoveSpeed;
     private float speedSmoothVelocity;
     private float nextSpeedChangeTime;
-    private Vector3 currentWaypointFloatTarget;
+    private Vector3 currentMoveTarget;
+    private bool isDeviating;
+    private int deviatingToIndex;
+    private float nextDeviationCheckTime;
+    private float nextZoneDriftTime;
     private float nextPauseDistanceTraveled;
     private float distanceSinceLastPause;
     private float pauseIntervalDistance;
@@ -228,7 +236,7 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
         currentWaypointIndex = 0;
         isWalking = true;
         currentMoveSpeed = targetMoveSpeed;
-        SetWaypointFloatTarget();
+        RefreshZoneDrift();
         SetupPauseSchedule();
         stuckCheckPosition = transform.position;
         stuckCheckTimer = stuckCheckInterval;
@@ -259,12 +267,36 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
         nextPauseDistanceTraveled = pauseIntervalDistance * Random.Range(0.7f, 1.3f);
     }
 
-    private void SetWaypointFloatTarget()
+    private void RefreshZoneDrift()
     {
-        Vector3 wp = waypointPath.GetWaypoint(currentWaypointIndex);
-        float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
-        float radius = Random.Range(waypointFloatMin, waypointFloatMax);
-        currentWaypointFloatTarget = wp + new Vector3(Mathf.Cos(angle) * radius, 0f, Mathf.Sin(angle) * radius);
+        if (waypointPath == null || waypointPath.WaypointCount == 0) return;
+        Vector2 drift = Random.insideUnitCircle * zoneRadius * 0.5f;
+        Vector3 zoneCenter = waypointPath.GetWaypoint(currentWaypointIndex);
+        currentMoveTarget = zoneCenter + new Vector3(drift.x, 0f, drift.y);
+        nextZoneDriftTime = Time.time + Random.Range(3f, 6f);
+    }
+
+    private bool TryStartDeviation()
+    {
+        if (waypointPath == null || waypointPath.WaypointCount < 2) return false;
+        if (HasReachedEndOfPath()) return false;
+        if (Random.value > deviationChance) return false;
+
+        float progress = (float)currentWaypointIndex / Mathf.Max(waypointPath.WaypointCount - 1, 1);
+        int interestIndex = waypointPath.PickWeightedInterest(
+            currentWaypointIndex, transform.position, progress, 0.8f);
+
+        // Only deviate to points ahead
+        if (interestIndex <= currentWaypointIndex) return false;
+
+        deviatingToIndex = interestIndex;
+        currentMoveTarget = waypointPath.GetWaypoint(interestIndex);
+        return true;
+    }
+
+    private bool HasReachedEndOfPath()
+    {
+        return waypointPath != null && waypointPath.HasReachedEnd(currentWaypointIndex);
     }
 
     private void Update()
@@ -310,8 +342,44 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
             }
             else
             {
-                Vector3 target = currentWaypointFloatTarget;
+                Vector3 target;
+                // --- Target management: zone or deviation ---
+                if (isDeviating)
+                {
+                    target = currentMoveTarget;
+                    // Check if deviation is complete
+                    float distToInterest = FlatDistanceTo(target);
+                    float distFromZone = Vector3.Distance(transform.position, waypointPath.GetWaypoint(currentWaypointIndex));
+                    if (distToInterest <= waypointPath.ArriveDistance || distFromZone > deviationMaxDistance)
+                    {
+                        isDeviating = false;
+                        RefreshZoneDrift();
+                        target = currentMoveTarget;
+                    }
+                }
+                else
+                {
+                    // Periodically roll for deviation
+                    if (Time.time >= nextDeviationCheckTime)
+                    {
+                        nextDeviationCheckTime = Time.time + deviationCheckInterval;
+                        if (TryStartDeviation())
+                        {
+                            target = currentMoveTarget;
+                            isDeviating = true;
+                        }
+                    }
+
+                    if (!isDeviating)
+                    {
+                        // Within-zone drift refresh
+                        if (Time.time >= nextZoneDriftTime)
+                            RefreshZoneDrift();
+                        target = currentMoveTarget;
+                    }
+                }
                 float currentSpeed = damageSlowTimer > 0f ? currentMoveSpeed * damageSlowMultiplier : currentMoveSpeed;
+
                 if (UseNavMesh)
                 {
                     navAgent.speed = currentSpeed;
@@ -334,11 +402,9 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
                     MovementUtility.FaceDirection(transform, moveDir, rotationSpeed, Time.deltaTime);
                 }
 
-                float distToTarget = FlatDistanceTo(target);
 
-                if (distToTarget <= waypointPath.ArriveDistance)
+                if (!isDeviating && FlatDistanceTo(waypointPath.GetWaypoint(currentWaypointIndex)) <= zoneRadius)
                     OnWaypointReached();
-
                 float movedThisFrame = currentSpeed * Time.deltaTime;
                 if (UseNavMesh) movedThisFrame = Mathf.Max(navAgent.velocity.magnitude, 0.01f) * Time.deltaTime;
                 distanceSinceLastPause += movedThisFrame;
@@ -430,7 +496,7 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
         if (waypointPath == null) return;
         if (TryArrive()) return;
         currentWaypointIndex = waypointPath.GetNextIndex(currentWaypointIndex);
-        SetWaypointFloatTarget();
+        RefreshZoneDrift();
         pauseTimer = Random.Range(1f, 3f);
         distanceSinceLastPause = 0f;
         stuckCheckPosition = transform.position;
@@ -458,7 +524,7 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
             {
                 currentWaypointIndex = waypointPath.GetNextIndex(currentWaypointIndex);
                 if (TryArrive()) return;
-                SetWaypointFloatTarget();
+                RefreshZoneDrift();
                 pauseTimer = 1f;
             }
             stuckCheckPosition = transform.position;
@@ -585,8 +651,8 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
         if (!hasArrived && !IsDead && waypointPath != null && waypointPath.WaypointCount > 0)
         {
             Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(currentWaypointFloatTarget, 0.4f);
-            Gizmos.DrawLine(transform.position, currentWaypointFloatTarget);
+            Gizmos.DrawWireSphere(currentMoveTarget, 0.4f);
+            Gizmos.DrawLine(transform.position, currentMoveTarget);
         }
 
         Gizmos.color = new Color(0.5f, 0.5f, 1f, 0.3f);

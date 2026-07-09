@@ -2963,9 +2963,9 @@ MonoBehaviour:
   arriveDistance: 3.02
   waypoints:
   - {x: 1.68, y: 0, z: -37.5}
-  - {x: 5.59, y: 0, z: -15.4}
-  - {x: -16.02, y: 0, z: 9.1}
-  - {x: 1.76, y: 0, z: 46.7}
+  - {x: 21.5, y: 0, z: -15.4}
+  - {x: -22.7, y: 0, z: 9.1}
+  - {x: 35.1, y: 0, z: 47.1}
   exploreWeights: []
   minInterestDist: 8
 --- !u!1 &728081831
@@ -7910,8 +7910,6 @@ MonoBehaviour:
   speedChangeIntervalMin: 4
   speedChangeIntervalMax: 8
   speedSmoothTime: 0.8
-  waypointFloatMin: 0
-  waypointFloatMax: 5
   pausesPerMinute: 2.5
   pauseDurationMin: 2
   pauseDurationMax: 4
@@ -7934,6 +7932,10 @@ MonoBehaviour:
   damageSlowDuration: 2
   stuckCheckInterval: 3
   stuckThreshold: 0.3
+  zoneRadius: 8
+  deviationChance: 0.25
+  deviationCheckInterval: 5
+  deviationMaxDistance: 25
   useBehaviourAI: 1
   animator: {fileID: 1796927689}
   isMovingParam: IsMoving
@@ -9294,7 +9296,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5138643344599376124, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
       propertyPath: m_Enabled
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5138643344599376124, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
       propertyPath: m_AutoBraking

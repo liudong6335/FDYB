@@ -207,6 +207,8 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
             }
             if (navAgent.isOnNavMesh)
                 navAgent.stoppingDistance = Mathf.Min(navAgent.stoppingDistance, 0.5f);
+                navAgent.updatePosition = false;
+                navAgent.updateRotation = false;
         }
         health = GetComponent<Health>();
         health.SetMaxHealth(maxHealth);
@@ -384,22 +386,34 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
                 {
                     navAgent.speed = currentSpeed;
                     navAgent.SetDestination(target);
+
+                    // Manually drive CharacterController with NavMeshAgent's desired velocity
+                    Vector3 desiredVel = navAgent.desiredVelocity;
+                    Vector3 moveDelta = desiredVel * Time.deltaTime;
+                    moveDelta.y = cc.isGrounded ? -0.1f : moveDelta.y - 9.81f * Time.deltaTime;
+                    cc.Move(moveDelta);
+
+                    // Sync agent position with actual transform after manual movement
+                    navAgent.nextPosition = transform.position;
+
+                    if (desiredVel.sqrMagnitude > 0.001f)
+                        MovementUtility.FaceDirection(transform, new Vector3(desiredVel.x, 0f, desiredVel.z), rotationSpeed, Time.deltaTime);
                 }
                 else
                 {
-                Vector3 toTarget = target - transform.position;
-                toTarget.y = 0f;
+                    Vector3 toTarget = target - transform.position;
+                    toTarget.y = 0f;
 
-                Vector3 avoid = GetObstacleAvoidance(toTarget);
-                Vector3 moveDir = (toTarget.normalized + avoid * obstacleAvoidStrength).normalized;
+                    Vector3 avoid = GetObstacleAvoidance(toTarget);
+                    Vector3 moveDir = (toTarget.normalized + avoid * obstacleAvoidStrength).normalized;
 
-                float speed = currentSpeed;
-                Vector3 nd = moveDir * speed * Time.deltaTime;
-                nd.y = cc.isGrounded ? -0.1f : nd.y - 9.81f * Time.deltaTime;
-                cc.Move(nd);
+                    float speed = currentSpeed;
+                    Vector3 nd = moveDir * speed * Time.deltaTime;
+                    nd.y = cc.isGrounded ? -0.1f : nd.y - 9.81f * Time.deltaTime;
+                    cc.Move(nd);
 
-                if (moveDir.sqrMagnitude > 0.001f)
-                    MovementUtility.FaceDirection(transform, moveDir, rotationSpeed, Time.deltaTime);
+                    if (moveDir.sqrMagnitude > 0.001f)
+                        MovementUtility.FaceDirection(transform, moveDir, rotationSpeed, Time.deltaTime);
                 }
 
 

@@ -387,8 +387,19 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
                     navAgent.speed = currentSpeed;
                     navAgent.SetDestination(target);
 
-                    // Manually drive CharacterController with NavMeshAgent's desired velocity
-                    Vector3 desiredVel = navAgent.desiredVelocity;
+                    // Wait for path calculation before reading desiredVelocity.
+                    // Without this check, navAgent.desiredVelocity returns Vector3.zero
+                    // on the first 1-2 frames after SetDestination.
+                    Vector3 desiredVel;
+                    if (navAgent.pathPending)
+                    {
+                        desiredVel = Vector3.zero;
+                    }
+                    else
+                    {
+                        desiredVel = navAgent.desiredVelocity;
+                    }
+
                     Vector3 moveDelta = desiredVel * Time.deltaTime;
                     moveDelta.y = cc.isGrounded ? -0.1f : moveDelta.y - 9.81f * Time.deltaTime;
                     cc.Move(moveDelta);

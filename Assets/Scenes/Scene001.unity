@@ -9296,7 +9296,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5138643344599376124, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5138643344599376124, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
       propertyPath: m_AutoBraking

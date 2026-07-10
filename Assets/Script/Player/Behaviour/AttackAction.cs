@@ -1,5 +1,12 @@
-﻿using UnityEngine;
+using UnityEngine;
 
+/// <summary>
+/// AttackAction - only fights when there's a reason:
+/// - NPC is under attack
+/// - Player was damaged recently (self-defense)
+/// - Very high aggression (proactive clearing, rare)
+/// Otherwise returns near-zero score so FollowNPC/etc can win.
+/// </summary>
 public class AttackAction : IAction
 {
     public string Name => "Attack";
@@ -9,24 +16,31 @@ public class AttackAction : IAction
         if (ctx.nearbyEnemyCount == 0) return 0f;
         if (ctx.healthPercent <= 0f) return 0f;
 
+        // --- Threat gate: only fight when there's a reason ---
+        bool npcUnderThreat = ctx.npcUnderAttack;
+        bool selfUnderThreat = ctx.timeSinceLastDamaged < 3f;
+        bool hasReasonToFight = npcUnderThreat || selfUnderThreat;
+
+        if (!hasReasonToFight)
+        {
+            // No threat at all: very low prio (only extremely aggressive chars might poke)
+            return Mathf.Clamp01(card.aggression * 0.1f - card.caution * 0.2f);
+        }
+
+        // --- Full attack evaluation ---
         float score = card.aggression * 0.5f;
         score -= card.caution * 0.3f;
-
-        // Continuous health penalty: low health suppresses attack proportionally
         score -= (1f - ctx.healthPercent) * card.selfPreservation * 0.5f;
 
         // Proximity: close targets are more compelling
         float proximity = Mathf.Max(0f, 1f - ctx.nearestEnemyDistance / card.aggroRange);
         score += proximity * 0.15f;
 
-        // Group: allies make you braver
+        // Allies make you braver
         score += ctx.nearbyAllyCount * 0.06f * card.supportiveness;
 
-        // VictoryFocus adds when healthy enough to push objectives
+        // VictoryFocus when healthy
         if (ctx.healthPercent > 0.5f) score += card.victoryFocus * 0.2f;
-
-        // SelfPreservation penalty (old - kept for backward compat)
-        score += ctx.nearbyEnemyCount * 0.03f;
 
         // Revenge: if just hit (< 2s ago), fight back harder
         if (ctx.timeSinceLastDamaged < 2f)
@@ -37,19 +51,15 @@ public class AttackAction : IAction
             score -= recency * card.caution * 0.15f;
         }
 
-        // 姹傝儨锛氭竻闄ゅ▉鑳?= 鎺ㄥ姩鑳滃埄
-        score += ctx.nearbyEnemyCount * 0.05f * card.victoryFocus;
-
-        if (ctx.npcExists && ctx.npcAlive && ctx.npcIsWalking)
+        // NPC protection bonus - major driver when NPC is attacked
+        if (npcUnderThreat)
         {
-            float npcDanger = Mathf.Max(0f, 1f - ctx.distanceToNPC / 10f);
-            score += npcDanger * card.supportiveness * 0.4f;
+            if (ctx.npcUnderAttack) score += 0.4f;
+            score += ctx.nearbyEnemyCount * 0.05f * card.victoryFocus;
         }
 
-        // 鑷繚锛氭畫琛€鏃跺噺灏戞敾鍑绘剰鎰?        if (ctx.healthPercent < 0.35f)
-            score -= (0.35f - ctx.healthPercent) * 2f * (card.caution + card.selfPreservation) * 0.5f;
+        score += card.oppression * 0.15f + card.forcefulness * 0.15f;
 
-                score += card.oppression * 0.15f + card.forcefulness * 0.15f;
         return Mathf.Clamp01(score);
     }
 
@@ -81,6 +91,3 @@ public class AttackAction : IAction
         }
     }
 }
-
-
-

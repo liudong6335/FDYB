@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -108,6 +108,43 @@ public class PlayerBehaviourModel : BehaviourModelBase
             ctx.distanceToNPC = Mathf.Sqrt(dx * dx + dz * dz);
         }
 
+        // --- NPC threat detection ---
+        ctx.enemiesNearNPC = 0;
+        ctx.nearestEnemyToNPC = null;
+        ctx.nearestEnemyToNPCDistance = float.MaxValue;
+        ctx.npcUnderAttack = false;
+        if (cachedNPC != null && !cachedNPC.IsDead && ctx.allDemons != null)
+        {
+        foreach (var e in ctx.allDemons)
+        {
+            if (e == null || e.IsDead) continue;
+            float dex = cachedNPC.transform.position.x - e.transform.position.x;
+            float dez = cachedNPC.transform.position.z - e.transform.position.z;
+            float sqr = dex * dex + dez * dez;
+            if (sqr < card.aggroRange * card.aggroRange)
+            {
+                ctx.enemiesNearNPC++;
+                if (sqr < ctx.nearestEnemyToNPCDistance)
+                {
+                    ctx.nearestEnemyToNPCDistance = Mathf.Sqrt(sqr);
+                    ctx.nearestEnemyToNPC = e.transform;
+                }
+                // Check if NPC is being attacked (enemy within attack range of NPC)
+                if (sqr < e.AttackRange * e.AttackRange)
+                    ctx.npcUnderAttack = true;
+            }
+        }
+        }
+
+        // Player index for formation positioning
+        ctx.playerIndex = 0;
+        var allP = PlayerMove.AllPlayers;
+        for (int pi = 0; pi < allP.Count; pi++)
+        {
+        if (allP[pi] != null && allP[pi].gameObject == gameObject)
+        { ctx.playerIndex = pi; break; }
+        }
+
         if (cachedPlayer1 == null || cachedPlayer1.IsDead)
         {
             foreach (var p in PlayerMove.AllPlayers)
@@ -138,4 +175,3 @@ public class PlayerBehaviourModel : BehaviourModelBase
         return ctx;
     }
 }
-

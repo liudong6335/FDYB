@@ -44,8 +44,8 @@ public class MonsterBehaviourModel : BehaviourModelBase
         // Short-term memory
         ctx.timeSinceLastDamaged = health != null ? health.TimeSinceLastDamage : float.MaxValue;
 
-        // Scan players
-        float aggroSqr = card != null ? card.aggroRange * card.aggroRange : 225f;
+       // Scan players
+        float aggroSqr = minion != null ? minion.SqAggroRange : 225f;
         ctx.nearbyEnemyCount = 0;
         foreach (var p in PlayerMove.AllPlayers)
         {
@@ -79,7 +79,7 @@ public class MonsterBehaviourModel : BehaviourModelBase
             ctx.distanceToNPC = Mathf.Sqrt(dx * dx + dz * dz);
         }
 
-        // --- Target selection (parallels DemonMinion.DetermineTarget) ---
+        // --- Target selection ---
         ctx.attackRange = minion != null ? minion.AttackRange : 5f;
         ctx.primaryTarget = null;
         ctx.distanceToTarget = float.MaxValue;
@@ -88,15 +88,25 @@ public class MonsterBehaviourModel : BehaviourModelBase
         {
             Transform selected = null;
             Transform attacker = minion.AttackerTransform;
+
+            // First priority: revenge the attacker
             if (attacker != null)
             {
                 float dx = transform.position.x - attacker.position.x;
                 float dz = transform.position.z - attacker.position.z;
                 float sqr = dx * dx + dz * dz;
                 var dmg = attacker.GetComponent<IDamageable>();
-                if (dmg != null && !dmg.IsDead && sqr < minion.SqDisengageDistance)
-                    selected = attacker;
-            }
+               if (dmg != null && !dmg.IsDead && sqr < minion.SqDisengageDistance)
+                   selected = attacker;
+                else if (attacker != null && sqr >= minion.SqDisengageDistance)
+                    minion.ClearAttacker();
+           }
+
+            // First priority: chase NPC
+            if (selected == null && npc != null && !npc.IsDead && !npc.HasArrived)
+                selected = npc.transform;
+
+            // Second priority: scan nearest player within aggro range
             if (selected == null)
             {
                 float ns = aggroSqr;
@@ -109,8 +119,6 @@ public class MonsterBehaviourModel : BehaviourModelBase
                     if (sqr < ns) { ns = sqr; selected = p.transform; }
                 }
             }
-            if (selected == null && npc != null && !npc.IsDead && !npc.HasArrived)
-                selected = npc.transform;
 
             ctx.primaryTarget = selected;
         }

@@ -34,8 +34,9 @@
  *   copperChestSpawnTime   - ͭ���״�����ʱ��
  *
  *   ���ͷ���
- *   penaltySpeedMultiplier - Զ��NPCʱ�����ٱ�����0.5=����50%��
- *   penaltyHealthDrain     - Զ��NPCʱ��ÿ���Ѫ��
+ *   penaltyStartDistance   - ��ʼͷ����룬Ĭ��30m
+ *   penaltyBaseDrain       - ���������˺�ֵ��Ĭ��10/s
+ *   penaltyDrainPerMeter   - ÿ��1���ӵĶ������˺���Ĭ��2/s
  *
  * ��˵����
  *   ����Ƴ�NPC̫Զ�����+��Ѫ��Boss����ʱ��0�����Bossս
@@ -49,8 +50,7 @@ public enum GamePhase { Menu, Escort, Exploration, BossBattle, Victory, GameOver
 
 public class GameManager : MonoBehaviour
 {
-    [Header("Escort")]
-    [SerializeField] private float npcMaxPlayerDistance = 20f;
+   [Header("Escort")]
 
     [Header("Spawn")]
     [SerializeField] private GameObject demonMinionPrefab;
@@ -73,9 +73,10 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float woodenChestStartDelay = 60f;
     [SerializeField] private float copperChestSpawnTime = 180f;
 
-    [Header("Penalty")]
-    [SerializeField] private float penaltySpeedMultiplier = 0.5f;
-    [SerializeField] private float penaltyHealthDrain = 20f;
+   [Header("Penalty")]
+    [SerializeField] private float penaltyStartDistance = 30f;
+    [SerializeField] private float penaltyBaseDrain = 10f;
+    [SerializeField] private float penaltyDrainPerMeter = 2f;
 
 
     [Header("References")]
@@ -103,7 +104,7 @@ public class GameManager : MonoBehaviour
 
     public static GameManager Instance { get { return instance; } }
     public GamePhase CurrentPhase { get { return currentPhase; } }
-    public float NPCMaxPlayerDistance { get { return npcMaxPlayerDistance; } }
+    public float NPCMaxPlayerDistance { get { return penaltyStartDistance; } }
     public float GameTimer { get { return gameTimer; } }
     public float BossAwakenTimer { get { return bossAwakenTimer; } }
     public float BossAwakenTimeTotal { get { return bossAwakenTime; } }
@@ -344,16 +345,18 @@ public class GameManager : MonoBehaviour
     {
         if (npcGoddess == null) return;
         Gizmos.color = new Color(1f, 1f, 0f, 0.3f);
-        Gizmos.DrawWireSphere(npcGoddess.transform.position, npcMaxPlayerDistance);
+        Gizmos.DrawWireSphere(npcGoddess.transform.position, penaltyStartDistance);
     }
 
     private void ApplyPenalty(PlayerMove player)
     {
         if (player == null || npcGoddess == null) return;
         float dist = Vector3.Distance(player.transform.position, npcGoddess.transform.position);
-        bool inPenalty = dist > npcMaxPlayerDistance;
-        player.SpeedMultiplier = inPenalty ? penaltySpeedMultiplier : 1f;
-        if (inPenalty)
-            player.TakeDamage(penaltyHealthDrain * Time.deltaTime);
+        float overDistance = dist - penaltyStartDistance;
+        if (overDistance > 0f)
+        {
+           float totalDrain = penaltyBaseDrain + overDistance * penaltyDrainPerMeter;
+           player.GetComponent<Health>()?.TakeDamage(totalDrain * Time.deltaTime);
+        }
     }
 }

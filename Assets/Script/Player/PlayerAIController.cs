@@ -29,6 +29,10 @@ public class PlayerAIController : MonoBehaviour
     [SerializeField] private float potionHealthThreshold = 0.5f;
     [SerializeField] private float potionCooldown = 10f;
 
+    [Header("Rescue Settings")]
+    [SerializeField] private float rescueHealthThreshold = 0.1f;
+    [SerializeField] private float rescueRadius = 5f;
+
     private PlayerMove aiPlayer;
     private PlayerCombat aiCombat;
     private PlayerHealth aiHealth;
@@ -62,6 +66,9 @@ public class PlayerAIController : MonoBehaviour
         nextTickTime = Time.time + tickInterval;
 
         TryUseHealthPotion();
+
+        // Priority 1: Rescue dying teammates
+        if (TryRescueTeammate()) return;
 
         // Flee evaluation returns true if we fled
         if (TryFleeIfNeeded()) return;
@@ -202,6 +209,114 @@ public class PlayerAIController : MonoBehaviour
         else
         {
             UpdateCombat();
+        }
+    }
+
+    // ========== Rescue Methods (Priority 1) ==========
+
+    /// <summary>Check if any teammate is critically low on HP.</summary>
+    private bool TryRescueTeammate()
+    {
+        Transform teammate = FindDyingTeammate();
+        if (teammate == null) return false;
+
+        // 1. Try to use health potion on the teammate
+        TryHealTeammate(teammate);
+
+        // 2. Attack enemies near the teammate and pull aggro
+        EngageEnemiesNear(teammate);
+
+        return true;
+    }
+
+    /// <summary>Find the teammate (P1 or NPC) with HP below rescue threshold.</summary>
+    private Transform FindDyingTeammate()
+    {
+        if (player1 != null && !player1.IsDead && player1.HealthPercent < rescueHealthThreshold)
+            return player1.transform;
+
+        if (npc != null && !npc.IsDead)
+        {
+            var health = npc.GetComponent<Health>();
+            if (health != null && health.HealthPercent < rescueHealthThreshold)
+                return npc.transform;
+        }
+        return null;
+    }
+
+    /// <summary>Use a health potion from AI's own backpack on the dying teammate.</summary>
+    private void TryHealTeammate(Transform teammate)
+    {
+        if (Time.time < nextPotionTime) return;
+
+        var inv = InventoryManager.Instance;
+        if (inv == null) return;
+
+        // Check Player 1 (has PlayerMove component)
+        var targetPlayer = teammate.GetComponent<PlayerMove>();
+        if (targetPlayer != null)
+        {
+            if (targetPlayer.HealthPercent >= rescueHealthThreshold) return;
+            inv.UseConsumable("health_potion_1", aiPlayer, targetPlayer);
+            nextPotionTime = Time.time + potionCooldown;
+            return;
+        }
+
+        // Heal NPC
+        var npcHealth = teammate.GetComponent<Health>();
+        if (npcHealth != null)
+        {
+            if (npcHealth.HealthPercent >= rescueHealthThreshold) return;
+
+            var backpack = inv.GetPlayerBackpack(aiPlayer);
+            var potion = backpack.Find(i => i.itemId == "health_potion_1" && i.itemType == ItemType.Consumable);
+            if (potion != null && potion.healAmount > 0)
+            {
+                backpack.Remove(potion);
+                npcHealth.Heal(potion.healAmount);
+                nextPotionTime = Time.time + potionCooldown;
+                inv.OnInventoryChanged?.Invoke();
+            }
+        }
+    }
+
+    /// <summary>Attack enemies near the teammate and register aggro to pull them toward AI.</summary>
+    private void EngageEnemiesNear(Transform teammate)
+    {
+        float sqrRadius = rescueRadius * rescueRadius;
+        Transform nearest = null;
+        float nearestSqr = float.MaxValue;
+
+        foreach (var demon in DemonMinion.AllDemons)
+        {
+            if (demon == null || demon.IsDead) continue;
+            float dx = teammate.position.x - demon.transform.position.x;
+            float dz = teammate.position.z - demon.transform.position.z;
+            float sqr = dx * dx + dz * dz;
+            if (sqr < sqrRadius && sqr < nearestSqr)
+            {
+                nearestSqr = sqr;
+                nearest = demon.transform;
+            }
+        }
+
+        if (nearest != null)
+        {
+            // Pull aggro: deal 1 damage + register as attacker so monster targets AI instead
+            var minion = nearest.GetComponent<DemonMinion>();
+            if (minion != null && !minion.IsDead)
+            {
+                minion.TakeDamage(1f);
+                minion.RegisterAttacker(transform);
+            }
+            aiCombat.TryEngage(nearest);
+        }
+        else
+        {
+            // No enemies near, move toward the dying teammate as backup
+            Vector3 targetPos = teammate.position + new Vector3(1f, 0f, 1f);
+            aiCombat.ClearTarget();
+            aiPlayer.SetMoveDestination(targetPos);
         }
     }
 

@@ -75,9 +75,10 @@ public class PlayerMove : MonoBehaviour, IDamageable
     private Camera mainCamera;
     private Vector3 moveDestination;
     private bool isPlayerAI;
-    private bool hasMoveCommand;
-
-    // Speed boost
+   private bool hasMoveCommand;
+    private DamageSlowEffect slowEffect;
+   
+   // Speed boost
     private bool isSpeedBoosted;
     private float speedBoostEndTime;
     private float speedBoostNextTime;
@@ -112,8 +113,9 @@ public class PlayerMove : MonoBehaviour, IDamageable
 
     private void Awake()
     {
-        allPlayers.Add(this);
-        playerHealth = GetComponent<PlayerHealth>();
+       allPlayers.Add(this);
+        slowEffect = GetComponent<DamageSlowEffect>();
+       playerHealth = GetComponent<PlayerHealth>();
         playerCombat = GetComponent<PlayerCombat>();
         mainCamera = Camera.main;
         // Migrate to CharacterController (collision blocking without physics push)
@@ -211,10 +213,12 @@ public class PlayerMove : MonoBehaviour, IDamageable
             ActivateSpeedBoost();
     }
 
-    private float GetEffectiveSpeed()
-    {
-        return moveSpeed * SpeedMultiplier * (isSpeedBoosted ? speedBoostMultiplier : 1f);
-    }
+   private float GetEffectiveSpeed()
+   {
+        float speed = moveSpeed * SpeedMultiplier * (isSpeedBoosted ? speedBoostMultiplier : 1f);
+        if (slowEffect != null) speed *= slowEffect.SpeedMultiplier;
+        return speed;
+   }
 
     #endregion
 

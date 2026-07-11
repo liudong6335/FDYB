@@ -261,6 +261,23 @@ public class InventoryManager : MonoBehaviour
         }
     }
 
+    /// <summary>Use a consumable from one player's backpack to heal another player.</summary>
+    public void UseConsumable(string itemId, PlayerMove giver, PlayerMove target)
+    {
+        var backpack = GetBackpack(giver);
+        GameItem item = backpack.Find(i => i.itemId == itemId && i.itemType == ItemType.Consumable);
+        if (item != null)
+        {
+            backpack.Remove(item);
+            // Heal effect
+            if (item.healAmount > 0)
+            {
+                target.Heal(item.healAmount);
+            }
+            OnInventoryChanged?.Invoke();
+        }
+    }
+
     public void SellItem(string itemId, PlayerMove player)
     {
         var backpack = GetBackpack(player);

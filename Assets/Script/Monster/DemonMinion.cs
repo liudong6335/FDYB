@@ -65,9 +65,11 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     [Header("Behavior")]
     [SerializeField] private float aggroRange = 10f;
     [SerializeField] private float disengageDistance = 10f;
-    [SerializeField] private float altarDeathDelay = 30f;
+   [Header("Target Tracking")]
+    [SerializeField] private float targetUpdateInterval = 2f;
+    [SerializeField] private float exactTrackingRange = 15f;
 
-    [Header("Patrol")]
+   [Header("Patrol")]
     [SerializeField] private float patrolRadius = 8f;
     [SerializeField] private float patrolWaitTime = 3f;
     private Vector3 patrolTarget;
@@ -99,9 +101,10 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     private bool isDormant;
     private bool isMovingInFrame;
     private bool initialized;
-    private CharacterController cc;
-    
-    /// <summary>Whether NavMeshAgent is available and on a valid NavMesh.</summary>
+   private CharacterController cc;
+    private DamageSlowEffect slowEffect;
+   
+   /// <summary>Whether NavMeshAgent is available and on a valid NavMesh.</summary>
     public bool UseNavMesh { get { return navAgent != null && navAgent.isActiveAndEnabled && navAgent.isOnNavMesh; } }
 
     private void SetupNavMeshAgent()
@@ -127,9 +130,11 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     // Squared distances for cheap comparisons
     private float sqrAttackRange;
     private float sqrAggroRange;
-    private float sqrDisengageDistance;
+   private float sqrDisengageDistance;
+    private float targetUpdateTimer;
+    private Vector3 lastTargetPosition;
 
-    private static int aliveCount;
+   private static int aliveCount;
     private static readonly List<DemonMinion> allDemons = new List<DemonMinion>();
     public static IReadOnlyList<DemonMinion> AllDemons => allDemons;
     public static int AliveCount { get { return aliveCount; } }
@@ -162,7 +167,8 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
         health = GetComponent<Health>();
         if (health == null) health = gameObject.AddComponent<Health>();
         SetupNavMeshAgent();
-        allDemons.Add(this);
+       allDemons.Add(this);
+        slowEffect = GetComponent<DamageSlowEffect>();
 
         sqrAttackRange = attackRange * attackRange;
         sqrAggroRange = aggroRange * aggroRange;
@@ -177,8 +183,16 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
         cachedRenderers = GetComponentsInChildren<Renderer>();
         if (healthBar == null) healthBar = GetComponentInChildren<UGUIFloatingHealthBar>();
         if (healthBar != null) healthBar.SetProvider(this);
-        patrolTarget = transform.position;
-    }
+       patrolTarget = transform.position;
+   }
+
+   private void OnValidate()
+   {
+       sqrAttackRange = attackRange * attackRange;
+       sqrAggroRange = aggroRange * aggroRange;
+       sqrDisengageDistance = disengageDistance * disengageDistance;
+        float trackingRange = exactTrackingRange * exactTrackingRange;
+   }
 
     public void Initialize(int level, NPCGoddess npc)
     {
@@ -243,10 +257,11 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     }
 
 
-    private void Update()
-    {
-        if (attackLockTimer > 0f) attackLockTimer -= Time.deltaTime;
-        if (isDead)
+   private void Update()
+   {
+       if (attackLockTimer > 0f) attackLockTimer -= Time.deltaTime;
+        if (targetUpdateTimer > 0f) targetUpdateTimer -= Time.deltaTime;
+       if (isDead)
         {
             UpdateAnimation();
             return;
@@ -267,7 +282,7 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
             }
             else
             {
-                if (attackLockTimer <= 0f) MoveToward(currentTarget.position);
+                if (attackLockTimer <= 0f) MoveToward(GetTargetMovePosition(currentTarget));
             }
         }
         else
@@ -280,7 +295,7 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
             {
                 float sqrDistToNPC = SqrDistanceTo(targetNPC.transform.position);
                 if (sqrDistToNPC > sqrAttackRange)
-                    if (attackLockTimer <= 0f) MoveToward(targetNPC.transform.position);
+                    if (attackLockTimer <= 0f) MoveToward(GetTargetMovePosition(targetNPC.transform));
             }
         }
         }
@@ -301,9 +316,10 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
                     LookAt(aiChaseTarget);
                     if (Time.time >= nextAttackTime) Attack();
                 }
-                else
-                {
-                    navAgent.SetDestination(aiChaseTarget.position);
+               else
+               {
+                    navAgent.speed = moveSpeed * (slowEffect != null ? slowEffect.SpeedMultiplier : 1f);
+                   navAgent.SetDestination(GetTargetMovePosition(aiChaseTarget));
                     MovementUtility.FaceDirection(transform, aiChaseTarget.position - transform.position, rotationSpeed, Time.deltaTime);
                 }
             }
@@ -317,22 +333,26 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
             }
             else
             {
-                if (attackLockTimer <= 0f) MoveToward(aiChaseTarget.position);
+                if (attackLockTimer <= 0f) MoveToward(GetTargetMovePosition(aiChaseTarget));
             }
             }
             }
-            else
-            {
-                currentTarget = null;
-            }
+           else
+           {
+               currentTarget = null;
+                if (targetNPC != null && targetNPC.HasArrived)
+                    UpdatePatrol();
+           }
         }
 
         UpdateAnimation();
     }
 
 
+
     private void DetermineTarget()
     {
+        // == First priority: revenge the attacker ==
         if (attackerTransform != null)
         {
             var attackerDamageable = attackerTransform.GetComponent<IDamageable>();
@@ -347,40 +367,36 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
             }
         }
 
-        if (targetNPC != null)
+        // == First priority: chase NPC ==
+        if (targetNPC != null && !targetNPC.IsDead && !targetNPC.HasArrived)
         {
-            float sqrNpcDist = SqrDistanceTo(targetNPC.transform.position);
-            if (sqrNpcDist > sqrDisengageDistance && attackerTransform == null)
+            SetTarget(targetNPC.transform);
+            return;
+        }
+
+        // == Second priority: scan nearest player within aggro range ==
+        {
+            PlayerMove nearest = null;
+            float nearestSqrDist = float.MaxValue;
+            foreach (var p in PlayerMove.AllPlayers)
             {
-                PlayerMove nearest = null;
-                float nearestSqrDist = float.MaxValue;
-
-
+                if (p == null || p.CurrentHealth <= 0f) continue;
+                float d = SqrDistanceTo(p.transform.position);
+                if (d < nearestSqrDist && d <= sqrAggroRange)
                 {
-                    foreach (var p in PlayerMove.AllPlayers)
-                    {
-                        if (p == null || p.CurrentHealth <= 0f) continue;
-                        float d = SqrDistanceTo(p.transform.position);
-                        if (d < nearestSqrDist && d <= sqrAggroRange)
-                        {
-                            nearestSqrDist = d;
-                            nearest = p;
-                        }
-                    }
+                    nearestSqrDist = d;
+                    nearest = p;
                 }
-
-                if (nearest != null)
-                {
-                    SetTarget(nearest.transform);
-                    return;
-                }
+            }
+            if (nearest != null)
+            {
+                SetTarget(nearest.transform);
+                return;
             }
         }
 
-            if (targetNPC != null && !targetNPC.HasArrived)
-                SetTarget(targetNPC.transform);
-            else if (targetNPC != null && currentTarget == targetNPC.transform)
-                currentTarget = null;
+        // No valid target found
+        currentTarget = null;
     }
     private void SetTarget(Transform newTarget)
     {
@@ -394,11 +410,31 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
         currentTarget = null;
     }
 
-    private void MoveToward(Vector3 targetPos)
+    private Vector3 GetTargetMovePosition(Transform target)
     {
-        if (UseNavMesh)
+        if (target == null) return transform.position;
+        float sqrDist = SqrDistanceTo(target.position);
+        float sqrExact = exactTrackingRange * exactTrackingRange;
+        if (sqrDist <= sqrExact)
         {
-            navAgent.SetDestination(targetPos);
+            targetUpdateTimer = 0f;
+            lastTargetPosition = target.position;
+        }
+        else if (targetUpdateTimer <= 0f)
+        {
+            lastTargetPosition = target.position;
+            targetUpdateTimer = targetUpdateInterval;
+        }
+        return lastTargetPosition;
+    }
+
+  private void MoveToward(Vector3 targetPos)
+   {
+        float slowMul = slowEffect != null ? slowEffect.SpeedMultiplier : 1f;
+       if (UseNavMesh)
+       {
+            navAgent.speed = moveSpeed * slowMul;
+           navAgent.SetDestination(targetPos);
             MovementUtility.FaceDirection(transform, targetPos - transform.position, rotationSpeed, Time.deltaTime);
             return;
         }
@@ -406,7 +442,7 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
         toTarget.y = 0f;
         MovementUtility.FaceDirection(transform, toTarget, rotationSpeed, Time.deltaTime);
         Vector3 newPos = Vector3.MoveTowards(transform.position,
-            new Vector3(targetPos.x, transform.position.y, targetPos.z), moveSpeed * Time.deltaTime);
+            new Vector3(targetPos.x, transform.position.y, targetPos.z), moveSpeed * slowMul * Time.deltaTime);
         Vector3 dd = newPos - transform.position;
         dd.y = cc.isGrounded ? -0.1f : dd.y - 9.81f * Time.deltaTime;
         cc.Move(dd);
@@ -466,7 +502,7 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
         OnDeath?.Invoke(this);
 
         // Hide after 1 second (allow death animation to play), keep alive for revival
-        if (!useBehaviourAI) StartCoroutine(HideDeadBody());
+        StartCoroutine(HideDeadBody());
 
 
 
@@ -536,22 +572,6 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     /// <summary>
     /// Start a countdown until this minion dies (used when NPC reaches the altar).
     /// </summary>
-    public void StartAltarDeathCountdown()
-    {
-        if (!isDead)
-            StartCoroutine(AltarDeathDelay());
-    }
- 
-    private IEnumerator AltarDeathDelay()
-    {
-        yield return new WaitForSeconds(altarDeathDelay);
-        if (!isDead)
-        {
-            OnHealthDepleted();
-            Destroy(gameObject, 1f); // altar death always destroys
-        }
-    }
-
     /// <summary>
     /// Set this demon to dormant (inactive, invisible) at game start.
     /// </summary>

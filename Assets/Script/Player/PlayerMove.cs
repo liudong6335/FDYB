@@ -1,37 +1,38 @@
 /*
  * ============================================================
- *  PlayerMove  -  ����ƶ�+�������
+ *  PlayerMove  -  Player Movement + Combat Controller
  * ============================================================
  *
- * �����ܡ�
- *   ��ҽ�ɫ���ƶ����ƣ�������ƶ�������MOBA����
- *   ����WASD�ƶ����Զ�׷�����ˡ����ټ��ܣ�Q������
- *   ������ PlayerHealth �� PlayerCombat��
+ * 【Functions】
+ *   Handles player movement: click-to-move (MOBA style),
+ *   WASD keyboard movement, auto-chase enemies, speed boost (Q key).
+ *   Works with PlayerHealth and PlayerCombat.
  *
- * �����ض���
- *   ��Ҷ���ͬʱ����� PlayerHealth �� PlayerCombat��
+ * 【Singleton】
+ *   PlayerMove instances register to the static AllPlayers list.
+ *   Each player object also has PlayerHealth and PlayerCombat.
  *
- * ���ɵ��ڲ�����
- *   ���ƶ���
- *   moveSpeed              - �����ƶ��ٶ�
- *   rotationSpeed          - ת���ٶ�
- *   stoppingDistance       - ����Ŀ�ĵ�ֹͣ����
- *   groundLayer            - ����㼶�������������
+ * 【Adjustable Parameters】
+ *   Movement:
+ *   moveSpeed              - Base movement speed
+ *   rotationSpeed          - Rotation speed
+ *   stoppingDistance       - Distance to stop from destination
+ *   groundLayer            - Ground layer for raycasting
  *
- *   �����ټ��� - Q����
- *   speedBoostMultiplier   - ���ٱ���
- *   speedBoostDuration     - ���ٳ���ʱ��
- *   speedBoostCooldown     - ������ȴʱ��
- *   speedBoostKey          - ���ٿ�ݼ���Ĭ��Q��
+ *   Speed Boost - Q Key:
+ *   speedBoostMultiplier   - Speed multiplier when boosted
+ *   speedBoostDuration     - Duration of speed boost
+ *   speedBoostCooldown     - Cooldown time
+ *   speedBoostKey          - Hotkey (default Q)
  *
- * ������˵����
- *   - ����������� = ����
- *   - ����������� = �ƶ�
- *   - WASD = �����ƶ�
- *   - Q = ���ټ���
+ * 【Control Scheme】
+ *   - Left click on enemy = engage combat
+ *   - Left click on ground = move
+ *   - WASD = keyboard movement
+ *   - Q = speed boost
  *
- * ��˵����
- *   ʹ�� CharacterController �ƶ�������ײ�赲
+ * 【Note】
+ *   Uses CharacterController for movement with collision blocking.
  */
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -51,7 +52,6 @@ public class PlayerMove : MonoBehaviour, IDamageable
 
     [Header("Skill - Speed Boost")]
 
-
     [SerializeField] private float speedBoostMultiplier = 1.5f;
     [SerializeField] private float speedBoostDuration = 3f;
     [SerializeField] private float speedBoostCooldown = 30f;
@@ -61,6 +61,8 @@ public class PlayerMove : MonoBehaviour, IDamageable
     [SerializeField] private Animator animator;
     [SerializeField] private string isMovingParameter = "IsMoving";
     [SerializeField] private string moveSpeedParameter = "MoveSpeed";
+    private int isMovingParamHash;
+    private int moveSpeedParamHash;
 
     #endregion
 
@@ -95,7 +97,7 @@ public class PlayerMove : MonoBehaviour, IDamageable
     public float SpeedBoostCooldownRemaining { get { return Mathf.Max(0f, speedBoostNextTime - Time.time); } }
     public float SpeedBoostCooldownTotal { get { return speedBoostCooldown; } }
 
-    // ͸��  Pass-through to PlayerHealth (backward compat for GameManager / NPCGoddess) ͸��
+    // Pass-through to PlayerHealth (backward compat for GameManager / NPCGoddess)
     public float CurrentHealth { get { return playerHealth != null ? playerHealth.CurrentHealth : 0f; } }
     public float HealthPercent { get { return playerHealth != null ? playerHealth.HealthPercent : 1f; } }
     public bool IsDead { get { return playerHealth == null || playerHealth.CurrentHealth <= 0f; } }
@@ -129,6 +131,8 @@ public class PlayerMove : MonoBehaviour, IDamageable
         var rb = GetComponent<Rigidbody>(); if (rb != null) Destroy(rb);
         var capsule = GetComponent<CapsuleCollider>(); if (capsule != null) capsule.isTrigger = true;
         if (animator == null) animator = GetComponent<Animator>();
+        isMovingParamHash = Animator.StringToHash(isMovingParameter);
+        moveSpeedParamHash = Animator.StringToHash(moveSpeedParameter);
         moveDestination = transform.position;
     }
 
@@ -152,7 +156,7 @@ public class PlayerMove : MonoBehaviour, IDamageable
 
         Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
 
-        // Click enemy �� engage combat
+        // Click enemy -> engage combat
         if (playerCombat.EnemyLayerMask.value != 0 &&
             Physics.Raycast(ray, out RaycastHit enemyHit, 500f, playerCombat.EnemyLayerMask, QueryTriggerInteraction.Collide))
         {
@@ -163,7 +167,7 @@ public class PlayerMove : MonoBehaviour, IDamageable
             return;
         }
 
-        // Click ground �� move
+        // Click ground -> move
         if (Physics.Raycast(ray, out RaycastHit groundHit, 500f, groundLayer, QueryTriggerInteraction.Ignore))
         {
             playerCombat.ClearTarget();
@@ -286,7 +290,7 @@ public class PlayerMove : MonoBehaviour, IDamageable
 
         Vector3 flatDest = moveDestination;
         flatDest.y = transform.position.y;
-        float sqrDist = SqrDistanceTo(flatDest);
+        float sqrDist = transform.position.SqrDistanceXZ(flatDest);
 
         if (sqrDist <= stoppingDistance * stoppingDistance)
         {
@@ -307,13 +311,6 @@ public class PlayerMove : MonoBehaviour, IDamageable
 
     #region Helpers
 
-    private float SqrDistanceTo(Vector3 point)
-    {
-        float dx = transform.position.x - point.x;
-        float dz = transform.position.z - point.z;
-        return dx * dx + dz * dz;
-    }
-
     private void UpdateAnimation()
     {
         if (animator == null) return;
@@ -330,8 +327,8 @@ public class PlayerMove : MonoBehaviour, IDamageable
             moving = keyboardMoving || hasMoveCommand;
         }
         if (playerCombat.IsAttackLocked) moving = false;
-        animator.SetBool(isMovingParameter, moving);
-        animator.SetFloat(moveSpeedParameter, moving ? moveSpeed : 0f);
+        animator.SetBool(isMovingParamHash, moving);
+        animator.SetFloat(moveSpeedParamHash, moving ? moveSpeed : 0f);
     }
 
     #endregion
@@ -341,9 +338,6 @@ public class PlayerMove : MonoBehaviour, IDamageable
     }
 
 }
-
-
-
 
 
 

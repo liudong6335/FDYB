@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  *  MovementUtility  -  移动工具类（静态工具）
  * ============================================================
@@ -29,5 +29,25 @@ public static class MovementUtility
             transform.rotation,
             Quaternion.LookRotation(direction.normalized, Vector3.up),
             rotationSpeed * deltaTime);
+    }
+    /// <summary>
+    /// Squared horizontal (XZ-plane) distance between two points (no sqrt).
+    /// Use for comparisons to avoid expensive Mathf.Sqrt calls.
+    /// </summary>
+    public static float SqrDistanceXZ(this Vector3 a, Vector3 b)
+    {
+        float dx = a.x - b.x;
+        float dz = a.z - b.z;
+        return dx * dx + dz * dz;
+    }
+
+    /// <summary>
+    /// Horizontal (XZ-plane) distance between two points (with sqrt).
+    /// </summary>
+    public static float DistanceXZ(this Vector3 a, Vector3 b)
+    {
+        float dx = a.x - b.x;
+        float dz = a.z - b.z;
+        return Mathf.Sqrt(dx * dx + dz * dz);
     }
 }

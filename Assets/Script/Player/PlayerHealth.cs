@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  *  PlayerHealth  -  玩家血量/属性
  * ============================================================
@@ -40,6 +40,8 @@ public class PlayerHealth : MonoBehaviour, IHealthProvider
 
     [SerializeField] private string hitParam = "Hit";
     [SerializeField] private string deathParam = "Death";
+    private int hitParamHash;
+    private int deathParamHash;
     private Animator animator;
 
     private Health health;
@@ -64,18 +66,20 @@ public class PlayerHealth : MonoBehaviour, IHealthProvider
         if (health == null) health = gameObject.AddComponent<Health>();
         health.SetMaxHealth(maxHealth);
         health.ResetToFull();
+        hitParamHash = Animator.StringToHash(hitParam);
+        deathParamHash = Animator.StringToHash(deathParam);
         health.onDeath.AddListener(OnHealthDepleted);
     }
 
     private void OnHealthDepleted()
     {
-        if (animator != null) { animator.ResetTrigger(deathParam); animator.SetTrigger(deathParam); }
+        if (animator != null) { animator.ResetTrigger(deathParamHash); animator.SetTrigger(deathParamHash); }
         OnDeath?.Invoke();
     }
 
     public void TakeDamage(float dmg)
     {
-        if (dmg > 0 && animator != null) { animator.ResetTrigger(hitParam); animator.SetTrigger(hitParam); }
+        if (dmg > 0 && animator != null) { animator.ResetTrigger(hitParamHash); animator.SetTrigger(hitParamHash); }
         if (health != null) health.TakeDamage(dmg);
     }
 

@@ -849,7 +849,7 @@ Animator:
   m_CorrespondingSourceObject: {fileID: 1106646209536331835, guid: af2c8f883208632428d71507ef2273b3, type: 3}
   m_PrefabInstance: {fileID: 2087842858}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &372169448
+--- !u!114 &372169454
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -858,11 +858,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 97717395}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ca86089aa4bfe0c42a83117860f724ac, type: 3}
+  m_Script: {fileID: 11500000, guid: 1db8527cd9ae8d9489338e7b3af7e99d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MonsterBehaviourModel
-  card: {fileID: 11400000, guid: fe2de3b39f1d5ea44a6a748147732d05, type: 2}
-  tickInterval: 0.8
+  m_EditorClassIdentifier: Assembly-CSharp::DemonMinionLifecycle
+--- !u!114 &372169455
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 97717395}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d71c6a9bee1e49f41925149637fd0386, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DemonMinionBrain
 --- !u!1 &401202819
 GameObject:
   m_ObjectHideFlags: 0
@@ -1403,6 +1413,11 @@ Transform:
   - {fileID: 712906371}
   m_Father: {fileID: 1053957546}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &517771189 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2278654725343003386, guid: af2c8f883208632428d71507ef2273b3, type: 3}
+  m_PrefabInstance: {fileID: 1507015664}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &564873455
 GameObject:
   m_ObjectHideFlags: 0
@@ -2278,6 +2293,30 @@ Animator:
   m_CorrespondingSourceObject: {fileID: 1106646209536331835, guid: af2c8f883208632428d71507ef2273b3, type: 3}
   m_PrefabInstance: {fileID: 1507015664}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &816172066
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 517771189}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1db8527cd9ae8d9489338e7b3af7e99d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DemonMinionLifecycle
+--- !u!114 &816172067
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 517771189}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d71c6a9bee1e49f41925149637fd0386, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DemonMinionBrain
 --- !u!1 &861400392
 GameObject:
   m_ObjectHideFlags: 0
@@ -2557,7 +2596,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1053957539
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4143,7 +4182,13 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2278654725343003386, guid: af2c8f883208632428d71507ef2273b3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 816172067}
+    - targetCorrespondingSourceObject: {fileID: 2278654725343003386, guid: af2c8f883208632428d71507ef2273b3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 816172066}
   m_SourcePrefab: {fileID: 100100000, guid: af2c8f883208632428d71507ef2273b3, type: 3}
 --- !u!1 &1511090205
 GameObject:
@@ -4745,59 +4790,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxHealth: 800
   healthRegen: 3
-  waypointPath: {fileID: 717699302}
-  rotationSpeed: 8
-  minSpeed: 1
-  maxSpeed: 2
-  speedChangeIntervalMin: 4
-  speedChangeIntervalMax: 8
-  speedSmoothTime: 0.8
-  pausesPerMinute: 2.5
-  pauseDurationMin: 2
-  pauseDurationMax: 4
-  minDistBetweenPauses: 15
-  targetTimeMin: 180
-  targetTimeMax: 210
-  obstacleCheckDistance: 3
-  obstacleCheckRadius: 0.5
-  obstacleAvoidStrength: 2
-  obstacleLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  healAmount: 200
-  healCooldown: 8
-  healCastTime: 2
-  healRange: 5
-  selfHealThresholdPercent: 0.6
-  playerHealThresholdPercent: 0.6
-  passiveHealCooldown: 15
-  passiveHealDuration: 10
-  passiveHealRange: 5
-  passiveHealPerSecond: 20
-  damageSlowMultiplier: 0.4
-  damageSlowDuration: 2
-  stuckCheckInterval: 3
-  stuckThreshold: 0.3
-  zoneRadius: 8
-  deviationChance: 0.25
-  deviationCheckInterval: 5
-  deviationMaxDistance: 25
-  dangerDetectRadius: 10
-  evadeTriggerDistance: 8
-  evadeSpeedMultiplier: 1.2
-  evadeStrength: 0.5
-  rescueHpThreshold: 0.5
-  emergencyHpThreshold: 0.1
-  rescueDetectRange: 15
-  rescueArriveDistance: 3
-  rescueStayTime: 3
-  rescueDetourOffset: 5
-  waitDurationMin: 3
-  waitDurationMax: 8
-  waitPatrolRadius: 5
-  waitNoTeammateTimeout: 3
-  waitCooldown: 10
-  useBehaviourAI: 1
   animator: {fileID: 1796927689}
   isMovingParam: IsMoving
   moveSpeedParam: MoveSpeed
@@ -4878,7 +4870,7 @@ MonoBehaviour:
   lowColor: {r: 0.9, g: 0.15, b: 0.15, a: 1}
   smoothSpeed: 8
   hideAtFullHealth: 0
---- !u!114 &1796927703
+--- !u!114 &1796927707
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -4887,11 +4879,123 @@ MonoBehaviour:
   m_GameObject: {fileID: 1796927687}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 51c13e10a42fba44384ce2a06573676b, type: 3}
+  m_Script: {fileID: 11500000, guid: 43802971b636f8b4781d6267d7e6fd78, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NPCBehaviourModel
-  card: {fileID: 11400000, guid: bdbbcae7986d7b344bdc983aff827043, type: 2}
-  tickInterval: 0.3
+  m_EditorClassIdentifier: Assembly-CSharp::NPCGoddessMovement
+  waypointPath: {fileID: 0}
+  rotationSpeed: 8
+  minSpeed: 1
+  maxSpeed: 3
+  speedChangeIntervalMin: 4
+  speedChangeIntervalMax: 8
+  speedSmoothTime: 0.8
+  walkTimeBase: 180
+  walkTimeRatio: 0.8
+  pausesPerMinute: 2.5
+  pauseDurationMin: 2
+  pauseDurationMax: 4
+  minDistBetweenPauses: 15
+  obstacleCheckDistance: 3
+  obstacleCheckRadius: 0.5
+  obstacleAvoidStrength: 2
+  obstacleLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  stuckCheckInterval: 3
+  stuckThreshold: 0.3
+  zoneRadius: 8
+  deviationChance: 0.25
+  deviationCheckInterval: 5
+  deviationMaxDistance: 25
+--- !u!114 &1796927708
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1796927687}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e10b3e731af359d428c5bd7950e9adbd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NPCGoddessHealing
+  healAmount: 200
+  healCooldown: 15
+  healCastTime: 3
+  healRange: 5
+  selfHealThresholdPercent: 0.6
+  playerHealThresholdPercent: 0.5
+  passiveHealCooldown: 10
+  passiveHealDuration: 5
+  passiveHealRange: 5
+  passiveHealPerSecond: 30
+--- !u!114 &1796927709
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1796927687}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbdc9c9f1d9524b4ab7a78f216774718, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NPCGoddessBehavior
+  dangerDetectRadius: 10
+  evadeTriggerDistance: 8
+  evadeSpeedMultiplier: 1.2
+  evadeStrength: 0.5
+  rescueHpThreshold: 0.5
+  emergencyHpThreshold: 0.1
+  rescueDetectRange: 15
+  rescueArriveDistance: 3
+  rescueStayTime: 3
+  rescueDetourOffset: 5
+  rescueCooldownTime: 6
+  rescueForwardTime: 5
+  maxBacktrackDistance: 8
+  waitDurationMin: 3
+  waitDurationMax: 8
+  waitPatrolRadius: 5
+  waitNoTeammateTimeout: 3
+  waitCooldown: 10
+--- !u!114 &1796927710
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1796927687}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43802971b636f8b4781d6267d7e6fd78, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NPCGoddessMovement
+  waypointPath: {fileID: 0}
+  rotationSpeed: 8
+  minSpeed: 1
+  maxSpeed: 3
+  speedChangeIntervalMin: 4
+  speedChangeIntervalMax: 8
+  speedSmoothTime: 0.8
+  walkTimeBase: 240
+  walkTimeRatio: 0.15
+  pausesPerMinute: 2.5
+  pauseDurationMin: 2
+  pauseDurationMax: 4
+  minDistBetweenPauses: 15
+  obstacleCheckDistance: 3
+  obstacleCheckRadius: 0.5
+  obstacleAvoidStrength: 2
+  obstacleLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  stuckCheckInterval: 3
+  stuckThreshold: 0.3
+  zoneRadius: 8
+  deviationChance: 0.25
+  deviationCheckInterval: 5
+  deviationMaxDistance: 25
 --- !u!95 &1800737378 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 1106646209536331835, guid: af2c8f883208632428d71507ef2273b3, type: 3}
@@ -4908,7 +5012,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 04a36210f31f8ac4ead6a0e3e6ce6218, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UGUIFloatingHealthBar
---- !u!114 &1800737380
+--- !u!114 &1800737385
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -4917,11 +5021,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 275271315}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ca86089aa4bfe0c42a83117860f724ac, type: 3}
+  m_Script: {fileID: 11500000, guid: 1db8527cd9ae8d9489338e7b3af7e99d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MonsterBehaviourModel
-  card: {fileID: 11400000, guid: fe2de3b39f1d5ea44a6a748147732d05, type: 2}
-  tickInterval: 0.3
+  m_EditorClassIdentifier: Assembly-CSharp::DemonMinionLifecycle
+--- !u!114 &1800737386
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 275271315}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d71c6a9bee1e49f41925149637fd0386, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DemonMinionBrain
 --- !u!114 &1819312583
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5063,6 +5177,35 @@ Transform:
   - {fileID: 227588386}
   m_Father: {fileID: 1298384285}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1861870032 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1153785637378582645, guid: 2029535f7acebf541a341c34e14b6041, type: 3}
+  m_PrefabInstance: {fileID: 5581663459430328243}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1861870039
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1861870032}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1db8527cd9ae8d9489338e7b3af7e99d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DemonMinionLifecycle
+--- !u!114 &1861870040
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1861870032}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d71c6a9bee1e49f41925149637fd0386, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DemonMinionBrain
 --- !u!1 &1900263930
 GameObject:
   m_ObjectHideFlags: 0
@@ -5911,7 +6054,10 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 2278654725343003386, guid: af2c8f883208632428d71507ef2273b3, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 372169448}
+      addedObject: {fileID: 372169455}
+    - targetCorrespondingSourceObject: {fileID: 2278654725343003386, guid: af2c8f883208632428d71507ef2273b3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 372169454}
   m_SourcePrefab: {fileID: 100100000, guid: af2c8f883208632428d71507ef2273b3, type: 3}
 --- !u!1001 &2100745408
 PrefabInstance:
@@ -5931,7 +6077,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5138643344599376124, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5138643344599376124, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
       propertyPath: m_AutoBraking
@@ -6007,7 +6153,16 @@ PrefabInstance:
       addedObject: {fileID: 1796927700}
     - targetCorrespondingSourceObject: {fileID: 6952509770047980630, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1796927703}
+      addedObject: {fileID: 1796927710}
+    - targetCorrespondingSourceObject: {fileID: 6952509770047980630, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1796927709}
+    - targetCorrespondingSourceObject: {fileID: 6952509770047980630, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1796927708}
+    - targetCorrespondingSourceObject: {fileID: 6952509770047980630, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1796927707}
   m_SourcePrefab: {fileID: 100100000, guid: 68a9c98d50ae79a498c3f9d604cbd513, type: 3}
 --- !u!1 &2110777422
 GameObject:
@@ -6643,7 +6798,10 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 2278654725343003386, guid: af2c8f883208632428d71507ef2273b3, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1800737380}
+      addedObject: {fileID: 1800737386}
+    - targetCorrespondingSourceObject: {fileID: 2278654725343003386, guid: af2c8f883208632428d71507ef2273b3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1800737385}
   m_SourcePrefab: {fileID: 100100000, guid: af2c8f883208632428d71507ef2273b3, type: 3}
 --- !u!1001 &5581663459430328243
 PrefabInstance:
@@ -6724,7 +6882,13 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1153785637378582645, guid: 2029535f7acebf541a341c34e14b6041, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1861870040}
+    - targetCorrespondingSourceObject: {fileID: 1153785637378582645, guid: 2029535f7acebf541a341c34e14b6041, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1861870039}
   m_SourcePrefab: {fileID: 100100000, guid: 2029535f7acebf541a341c34e14b6041, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

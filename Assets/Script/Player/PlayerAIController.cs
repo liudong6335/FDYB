@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// Semi-automatic AI controller for the secondary player (P2).
@@ -139,9 +139,8 @@ public class PlayerAIController : MonoBehaviour
         foreach (var e in DemonMinion.AllDemons)
         {
             if (e == null || e.IsDead) continue;
-            float dx = transform.position.x - e.transform.position.x;
-            float dz = transform.position.z - e.transform.position.z;
-            if (dx * dx + dz * dz < sqrRange)
+            float sqrDist = transform.position.SqrDistanceXZ(e.transform.position);
+            if (sqrDist < sqrRange)
                 count++;
         }
         return count;
@@ -154,9 +153,8 @@ public class PlayerAIController : MonoBehaviour
         foreach (var e in DemonMinion.AllDemons)
         {
             if (e == null || e.IsDead) continue;
-            float dx = transform.position.x - e.transform.position.x;
-            float dz = transform.position.z - e.transform.position.z;
-            if (dx * dx + dz * dz < sqrRange)
+            float sqrDist = transform.position.SqrDistanceXZ(e.transform.position);
+            if (sqrDist < sqrRange)
                 total += e.CurrentHealth;
         }
         return total;
@@ -168,9 +166,8 @@ public class PlayerAIController : MonoBehaviour
         foreach (var e in DemonMinion.AllDemons)
         {
             if (e == null || e.IsDead) continue;
-            float dx = transform.position.x - e.transform.position.x;
-            float dz = transform.position.z - e.transform.position.z;
-            if (dx * dx + dz * dz < sqrRange && e.CurrentHealth <= damage)
+            float sqrDist = transform.position.SqrDistanceXZ(e.transform.position);
+            if (sqrDist < sqrRange && e.CurrentHealth <= damage)
             {
                 aiCombat.TryEngage(e.transform);
                 return true;
@@ -187,9 +184,8 @@ public class PlayerAIController : MonoBehaviour
         foreach (var e in DemonMinion.AllDemons)
         {
             if (e == null || e.IsDead) continue;
-            float dx = transform.position.x - e.transform.position.x;
-            float dz = transform.position.z - e.transform.position.z;
-            if (dx * dx + dz * dz < sqrRange && e.CurrentHealth < lowestHP)
+            float sqrDist = transform.position.SqrDistanceXZ(e.transform.position);
+            if (sqrDist < sqrRange && e.CurrentHealth < lowestHP)
             {
                 lowestHP = e.CurrentHealth;
                 weakest = e.transform;
@@ -290,9 +286,7 @@ public class PlayerAIController : MonoBehaviour
         foreach (var demon in DemonMinion.AllDemons)
         {
             if (demon == null || demon.IsDead) continue;
-            float dx = teammate.position.x - demon.transform.position.x;
-            float dz = teammate.position.z - demon.transform.position.z;
-            float sqr = dx * dx + dz * dz;
+            float sqr = teammate.position.SqrDistanceXZ(demon.transform.position);
             if (sqr < sqrRadius && sqr < nearestSqr)
             {
                 nearestSqr = sqr;
@@ -374,9 +368,7 @@ public class PlayerAIController : MonoBehaviour
         {
             if (e == null || e.IsDead) continue;
 
-            float dx = npc.transform.position.x - e.transform.position.x;
-            float dz = npc.transform.position.z - e.transform.position.z;
-            float sqrDist = dx * dx + dz * dz;
+            float sqrDist = npc.transform.position.SqrDistanceXZ(e.transform.position);
 
             if (sqrDist < nearestSqr)
             {
@@ -406,9 +398,7 @@ public class PlayerAIController : MonoBehaviour
         foreach (var e in DemonMinion.AllDemons)
         {
             if (e == null || e.IsDead) continue;
-            float dx = transform.position.x - e.transform.position.x;
-            float dz = transform.position.z - e.transform.position.z;
-            float sqrDist = dx * dx + dz * dz;
+            float sqrDist = transform.position.SqrDistanceXZ(e.transform.position);
             if (sqrDist < nearestSqr)
             {
                 nearestSqr = sqrDist;
@@ -426,9 +416,7 @@ public class PlayerAIController : MonoBehaviour
     private void FollowNPC()
     {
         if (npc == null || npc.IsDead || npc.HasArrived) return;
-        float dx = transform.position.x - npc.transform.position.x;
-        float dz = transform.position.z - npc.transform.position.z;
-        float sqrDist = dx * dx + dz * dz;
+        float sqrDist = transform.position.SqrDistanceXZ(npc.transform.position);
         if (sqrDist > followDistance * followDistance * 2f)
         {
             Vector3 targetPos = npc.transform.position + new Vector3(1.5f, 0f, 1.5f);

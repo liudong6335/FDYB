@@ -1,45 +1,46 @@
 /*
  * ============================================================
- *  GameManager  -  ��Ϸ�����������Ŀ�������
+ *  GameManager  -  Game Phase & Spawn Manager (Singleton)
  * ============================================================
  *
- * �����ܡ�
- *   ������Ϸ�������̣��׶��л������͡�̽����Boss����
- *   С�ּ���/������䶨ʱ���ɡ���ҳͷ�����NPC̫Զ����
- *   Boss���ѵ���ʱ��
+ * 【Functions】
+ *   Manages the game flow: Escort phase -> Exploration -> BossBattle.
+ *   Controls demon spawns, chest spawns, penalty (drain HP when far from NPC),
+ *   and Boss awakening timer.
  *
- * �����ض���
- *   �����е� GameManager ��Ϸ���󣨵�����DontDestroyOnLoad��
+ * 【Singleton】
+ *   GameManager is a singleton, attached to DontDestroyOnLoad.
  *
- * ���ɵ��ڲ�����
- *   �����ͣ�
- *   npcMaxPlayerDistance   - �����NPC���������루������ͷ���
+ * 【Adjustable Parameters】
+ *   Escort:
+ *   npcMaxPlayerDistance   - Max distance from NPC before penalty starts (default 30m)
  *
- *   �����ɣ�
- *   demonMinionPrefab      - С��Ԥ����
- *   demonSpawnInterval     - С�ּ�����
- *   maxDemonMinions        - ͬʱ�����ڵ�С������
- *   maxDemonLevel          - С����ߵȼ�
- *   demonReviveTime        - С�ָ���ʱ�䣨�룩
+ *   Spawn:
+ *   demonMinionPrefab      - Demon minion prefab
+ *   demonSpawnInterval     - Spawn interval range (min/max)
+ *   maxDemonMinions        - Max concurrent demon minions
+ *   maxDemonLevel          - Max demon level
+ *   demonReviveTime        - Revive delay in seconds
  *
- *   ��Boss���ѣ�
- *   bossAwakenTime         - Boss���ѵ���ʱ���룬Ĭ��480=8���ӣ�
- *   killAccelerationPerKill- ÿ��ɱһֻС��ʹBoss��ǰ���ѵ�����
+ *   Boss Awakening:
+ *   bossAwakenTime         - Time until Boss awakens (default 480s = 8min)
+ *   killAccelerationPerKill- Each demon kill accelerates Boss timer
  *
- *   �����䣩
- *   wooden/copper chest prefab - ľ/ͭ����Ԥ����
- *   totalWoodenChests      - �ܹ����ɵ�ľ����
- *   chestSpawnPerMinute    - ÿ�������ɱ�����
- *   woodenChestStartDelay  - ľ���״������ӳ�
- *   copperChestSpawnTime   - ͭ���״�����ʱ��
+ *   Chests:
+ *   wooden/copper chest prefab - Wooden/Copper chest prefabs
+ *   totalWoodenChests      - Total wooden chest count
+ *   chestSpawnPerMinute    - Chests spawned per minute
+ *   woodenChestStartDelay  - Initial delay before first wooden chest
+ *   copperChestSpawnTime   - Time at which copper chest appears
  *
- *   ���ͷ���
- *   penaltyStartDistance   - ��ʼͷ����룬Ĭ��30m
- *   penaltyBaseDrain       - ���������˺�ֵ��Ĭ��10/s
- *   penaltyDrainPerMeter   - ÿ��1���ӵĶ������˺���Ĭ��2/s
+ *   Penalty:
+ *   penaltyStartDistance   - Distance threshold for penalty (default 30m)
+ *   penaltyBaseDrain       - Base HP drain per second (default 10/s)
+ *   penaltyDrainPerMeter   - Additional drain per meter over threshold (default 2/s)
  *
- * ��˵����
- *   ����Ƴ�NPC̫Զ�����+��Ѫ��Boss����ʱ��0�����Bossս
+ * 【Note】
+ *   If players stray too far from NPC, they take damage.
+ *   When Boss timer reaches 0, BossBattle phase begins.
  */
 using UnityEngine;
 using UnityEngine.Events;

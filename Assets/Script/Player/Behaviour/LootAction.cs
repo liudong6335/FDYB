@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// 鎷惧彇瀹濈鍔ㄤ綔 鈥?闄勮繎鏈夋湭寮€鍚殑瀹濈鏃惰蛋杩囧幓寮€绠便€?/// 璇勫垎鐢辫椽濠害銆佸懆鍥存晫鎯呫€佽閲忓叡鍚岄┍鍔ㄣ€?/// </summary>
@@ -52,9 +52,7 @@ public class LootAction : IAction
         foreach (var c in chests)
         {
             if (c == null || c.IsOpened) continue;
-            float dx = player.transform.position.x - c.transform.position.x;
-            float dz = player.transform.position.z - c.transform.position.z;
-            float sqr = dx * dx + dz * dz;
+            float sqr = player.transform.position.SqrDistanceXZ(c.transform.position);
             if (sqr < nearestSqr) { nearestSqr = sqr; nearestChest = c; }
         }
 

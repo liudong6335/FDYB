@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  *  PlayerCombat  -  玩家战斗系统
  * ============================================================
@@ -40,6 +40,7 @@ public class PlayerCombat : MonoBehaviour
     [Header("Animation")]
     [SerializeField] private Animator animator;
     [SerializeField] private string attackParameter = "Attack";
+    private int attackParameterHash;
 
     private PlayerHealth playerHealth;
     private Transform attackTarget;
@@ -77,7 +78,7 @@ public class PlayerCombat : MonoBehaviour
     {
         if (target == null) return false;
         SetTarget(target);
-        float sqrDist = SqrDistanceTo(target.position);
+        float sqrDist = transform.position.SqrDistanceXZ(target.position);
         return sqrDist <= sqrAttackRange;
     }
 
@@ -99,7 +100,7 @@ public class PlayerCombat : MonoBehaviour
             return;
         }
 
-        float sqrDist = SqrDistanceTo(attackTarget.position);
+        float sqrDist = transform.position.SqrDistanceXZ(attackTarget.position);
 
         // Disengage if too far
         if (sqrDist > sqrChaseMaxDistance)
@@ -117,7 +118,7 @@ public class PlayerCombat : MonoBehaviour
     public bool IsInAttackRange(Transform target)
     {
         if (target == null) return false;
-        return SqrDistanceTo(target.position) <= sqrAttackRange;
+        return transform.position.SqrDistanceXZ(target.position) <= sqrAttackRange;
     }
 
     private void SetTarget(Transform target)
@@ -132,7 +133,7 @@ public class PlayerCombat : MonoBehaviour
         nextAttackTime = Time.time + attackCooldown;
         attackLockUntil = Time.time + attackLockTime;
 
-        if (animator != null) { animator.ResetTrigger(attackParameter); animator.SetTrigger(attackParameter); }
+        if (animator != null) { animator.ResetTrigger(attackParameterHash); animator.SetTrigger(attackParameterHash); }
 
         if (attackTarget == null) return;
 
@@ -186,13 +187,6 @@ public class PlayerCombat : MonoBehaviour
             yield return null;
         }
         if (proj != null) Destroy(proj);
-    }
-
-    private float SqrDistanceTo(Vector3 point)
-    {
-        float dx = transform.position.x - point.x;
-        float dz = transform.position.z - point.z;
-        return dx * dx + dz * dz;
     }
 }
 

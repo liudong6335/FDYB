@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class KiteAction : IAction
 {
@@ -48,9 +48,7 @@ public class KiteAction : IAction
             foreach (var e in ctx.allDemons)
             {
                 if (e == null || e.IsDead) continue;
-                float dx = npc.transform.position.x - e.transform.position.x;
-                float dz = npc.transform.position.z - e.transform.position.z;
-                float sqr = dx * dx + dz * dz;
+                float sqr = npc.transform.position.SqrDistanceXZ(e.transform.position);
                 if (sqr < nearestSqr) { nearestSqr = sqr; demonTarget = e.transform; }
             }
         }

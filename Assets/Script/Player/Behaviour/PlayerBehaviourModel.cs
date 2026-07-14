@@ -72,9 +72,7 @@ public class PlayerBehaviourModel : BehaviourModelBase
         foreach (var e in ctx.allDemons)
         {
             if (e == null || e.IsDead) continue;
-            float dx = transform.position.x - e.transform.position.x;
-            float dz = transform.position.z - e.transform.position.z;
-            float sqrDist = dx * dx + dz * dz;
+            float sqrDist = transform.position.SqrDistanceXZ(e.transform.position);
             float aggroSqr = card.aggroRange * card.aggroRange;
             if (sqrDist < aggroSqr)
             {
@@ -91,9 +89,8 @@ public class PlayerBehaviourModel : BehaviourModelBase
         foreach (var p in PlayerMove.AllPlayers)
         {
             if (p == null || p.IsDead || p == player) continue;
-            float dx = transform.position.x - p.transform.position.x;
-            float dz = transform.position.z - p.transform.position.z;
-            if (dx * dx + dz * dz < allyRangeSqr) ctx.nearbyAllyCount++;
+            float sqrDistAlly = transform.position.SqrDistanceXZ(p.transform.position);
+            if (sqrDistAlly < allyRangeSqr) ctx.nearbyAllyCount++;
         }
 
         if (cachedNPC == null || cachedNPC.IsDead)
@@ -103,9 +100,7 @@ public class PlayerBehaviourModel : BehaviourModelBase
             ctx.npcExists = true;
             ctx.npcAlive = true;
             ctx.npcIsWalking = cachedNPC.IsWalking;
-            float dx = transform.position.x - cachedNPC.transform.position.x;
-            float dz = transform.position.z - cachedNPC.transform.position.z;
-            ctx.distanceToNPC = Mathf.Sqrt(dx * dx + dz * dz);
+            ctx.distanceToNPC = transform.position.DistanceXZ(cachedNPC.transform.position);
         }
 
         // --- NPC threat detection ---

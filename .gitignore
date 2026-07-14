@@ -45,3 +45,6 @@ crashlytics-build.properties
 
 # Codex desktop plugin
 .codex-plugin/
+
+# Unity Auto Recovery
+_Recovery/

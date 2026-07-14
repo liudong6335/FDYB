@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  *  TreasureChest  -  宝箱
  * ============================================================
@@ -74,7 +74,7 @@ public class TreasureChest : MonoBehaviour
     {
         if (isOpened || !isOpening || openingPlayer == null) return;
 
-        float sqrDist = SqrDistanceTo(openingPlayer.transform.position);
+        float sqrDist = transform.position.SqrDistanceXZ(openingPlayer.transform.position);
         if (sqrDist > sqrInteractPadding)
         {
             CancelOpening();
@@ -100,7 +100,7 @@ public class TreasureChest : MonoBehaviour
         foreach (var p in PlayerMove.AllPlayers)
         {
             if (p == null) continue;
-            float d = SqrDistanceTo(p.transform.position);
+            float d = transform.position.SqrDistanceXZ(p.transform.position);
             if (d < nearestSqrDist)
             {
                 nearestSqrDist = d;
@@ -223,13 +223,6 @@ public class TreasureChest : MonoBehaviour
             statType = isHealth ? StatType.Health : StatType.DPS,
             statValue = statValue
         };
-    }
-
-    private float SqrDistanceTo(Vector3 point)
-    {
-        float dx = transform.position.x - point.x;
-        float dz = transform.position.z - point.z;
-        return dx * dx + dz * dz;
     }
 
     private void OnDrawGizmosSelected()

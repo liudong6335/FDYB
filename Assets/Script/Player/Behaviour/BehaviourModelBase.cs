@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -12,7 +12,7 @@ public abstract class BehaviourModelBase : MonoBehaviour
     [SerializeField] protected CharacterCard card;
 
     [Header("Tick")]
-    [SerializeField] protected float tickInterval = 0.3f;
+    [SerializeField] protected float tickInterval = 0.5f;
 
     protected List<IAction> actions = new List<IAction>();
     protected float nextTickTime;
@@ -53,3 +53,4 @@ public abstract class BehaviourModelBase : MonoBehaviour
     public List<TickResult> GetLastTickData() => lastTickScores;
     public string GetCardName() => card != null ? card.characterName : "Unset";
 }
+

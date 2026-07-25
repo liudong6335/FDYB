@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
@@ -11,7 +11,7 @@ using UnityEngine;
 [RequireComponent(typeof(Health))]
 public class PlayerBehaviourModel : BehaviourModelBase
 {
-    [Header("Behaviours 鈥?toggle each action on/off")]
+    [Header("Behaviours 閳?toggle each action on/off")]
     [SerializeField] private bool enableAttack = true;
     [SerializeField] private bool enableKite = true;
     [SerializeField] private bool enableHeal = true;
@@ -33,9 +33,7 @@ public class PlayerBehaviourModel : BehaviourModelBase
         combat = GetComponent<PlayerCombat>();
         health = GetComponent<PlayerHealth>();
         healthComp = GetComponent<Health>();
-        // Disable old AI controller to prevent both systems from fighting
-        var oldAI = GetComponent<PlayerAIController>();
-        if (oldAI != null) oldAI.enabled = false;
+        // Old PlayerAIController removed - BehaviourModel handles AI directly
         player.SetPlayerAI(true);
         base.Awake();
     }

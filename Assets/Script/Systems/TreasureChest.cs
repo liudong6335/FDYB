@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ============================================================
  *  TreasureChest  -  宝箱
  * ============================================================
@@ -53,14 +53,24 @@ public class TreasureChest : MonoBehaviour
     private float sqrInteractDistance;
     private float sqrInteractPadding;
 
+    // Static registry for efficient AI queries (avoids FindObjectsByType)
+    private static readonly List<TreasureChest> allChests = new List<TreasureChest>();
+    public static IReadOnlyList<TreasureChest> ActiveChests => allChests;
+
     public ChestType Type { get { return chestType; } }
     public bool IsOpened { get { return isOpened; } }
     public bool IsOpening { get { return isOpening; } }
 
     private void Awake()
     {
+        allChests.Add(this);
         sqrInteractDistance = interactDistance * interactDistance;
         sqrInteractPadding = (interactDistance + 0.5f) * (interactDistance + 0.5f);
+    }
+
+    private void OnDestroy()
+    {
+        allChests.Remove(this);
     }
 
     private void Start()

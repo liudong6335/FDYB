@@ -1,4 +1,4 @@
-/*
+﻿/*
  * ============================================================
  *  GameManager  -  Game Phase & Spawn Manager (Singleton)
  * ============================================================
@@ -129,7 +129,8 @@ public class GameManager : MonoBehaviour
             if (players.Length > 1 && player2 == null) player2 = players[1];
         }
         if (npcGoddess != null)
-        npcGoddess.OnArrived += HandleNPCArrived;
+        if (QuestManager.Instance != null)
+            QuestManager.Instance.OnAllAreasComplete += HandleAllAreasComplete;
         StartEscortPhase();
     }
 
@@ -224,7 +225,7 @@ public class GameManager : MonoBehaviour
     /// Called when NPC reaches the final altar.
     /// Starts a death countdown on all active minions (replaces old static DemonMinion.OnNPCReachedAltar).
     /// </summary>
-    private void HandleNPCArrived()
+    private void HandleAllAreasComplete()
     {
         var allDemons = FindObjectsByType<DemonMinion>(FindObjectsSortMode.None);
         foreach (var m in allDemons)
@@ -232,6 +233,7 @@ public class GameManager : MonoBehaviour
             if (m.IsDead)
                 Destroy(m.gameObject);
         }
+        Debug.Log("[GameManager] All quest areas completed, transitioning...");
     }
     private void SpawnChests()
     {
@@ -260,16 +262,7 @@ public class GameManager : MonoBehaviour
 
     private Vector3 GetChestSpawnPosOnPath(float offsetRadius)
     {
-        if (npcGoddess == null || npcGoddess.WaypointPath == null || npcGoddess.WaypointPath.WaypointCount == 0)
-            return GetChestSpawnPos(0f, 20f);
-
-        int nextIndex = npcGoddess.CurrentWaypointIndex;
-        if (nextIndex >= npcGoddess.WaypointPath.WaypointCount)
-            nextIndex = npcGoddess.WaypointPath.WaypointCount - 1;
-
-        Vector3 wpPos = npcGoddess.WaypointPath.GetWaypoint(nextIndex);
-        Vector2 offset = Random.insideUnitCircle * offsetRadius;
-        return wpPos + new Vector3(offset.x, 0f, offset.y);
+        return GetChestSpawnPos(0f, 20f);
     }
     private Vector3 GetChestSpawnPos(float minDist, float maxDist)
     {
@@ -285,7 +278,7 @@ public class GameManager : MonoBehaviour
         var monsterGO = GameObject.Find("Monster");
         if (monsterGO == null)
         {
-            Debug.LogError("[GameManager] Monster parent not found in scene!");
+            // Monster parent not found - old system disabled by quest area system
             return;
         }
         

@@ -1,18 +1,18 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
-/// 鎷惧彇瀹濈鍔ㄤ綔 鈥?闄勮繎鏈夋湭寮€鍚殑瀹濈鏃惰蛋杩囧幓寮€绠便€?/// 璇勫垎鐢辫椽濠害銆佸懆鍥存晫鎯呫€佽閲忓叡鍚岄┍鍔ㄣ€?/// </summary>
+/// 閹锋儳褰囩€规繄顔堥崝銊ょ稊 閳?闂勫嫯绻庨張澶嬫弓瀵偓閸氼垳娈戠€规繄顔堥弮鎯拌泲鏉╁洤骞撳鈧粻渚库偓?/// 鐠囧嫬鍨庨悽杈そ婵狀亜瀹抽妴浣告噯閸ュ瓨鏅幆鍛偓浣筋攨闁插繐鍙￠崥宀勨攳閸斻劊鈧?/// </summary>
 public class LootAction : IAction
 {
     public string Name => "Loot";
 
     public float Evaluate(CharacterCard card, GameContext ctx)
     {
-        // 鎴樻枟绱ц揩鏃朵笉鎹?        if (ctx.threatLevel > 0.4f) return 0f;
+        // 閹存ɑ鏋熺槐褑鎻╅弮鏈电瑝閹?        if (ctx.threatLevel > 0.4f) return 0f;
         if (ctx.healthPercent < 0.4f) return 0f;
 
-        // 鎵弿闄勮繎瀹濈
-        var chests = Object.FindObjectsByType<TreasureChest>(FindObjectsSortMode.None);
+        // 閹殿偅寮块梽鍕箮鐎规繄顔?
+        var chests = TreasureChest.ActiveChests;
         int unopened = 0;
         float nearestDist = float.MaxValue;
 
@@ -29,12 +29,12 @@ public class LootAction : IAction
 
         if (unopened == 0) return 0f;
 
-        // 璐┆椹卞姩
+        // 鐠愵亜鈹嗘す鍗炲З
         float score = card.greed * 0.5f;
 
-        // 瓒婅繎瓒婃兂鎹?        score += Mathf.Max(0f, 1f - nearestDist / card.lootRadius) * 0.3f;
+        // 鐡掑﹨绻庣搾濠冨厒閹?        score += Mathf.Max(0f, 1f - nearestDist / card.lootRadius) * 0.3f;
 
-        // 璋ㄦ厧鐨勪汉浼氭洿鐘硅鲍
+        // 鐠嬨劍鍘ч惃鍕眽娴兼碍娲块悩纭呴矋
         if (card.caution > 0.6f) score -= card.caution * 0.15f;
 
         return Mathf.Clamp01(score);
@@ -45,7 +45,7 @@ public class LootAction : IAction
         var player = owner.GetComponent<PlayerMove>();
         var combat = owner.GetComponent<PlayerCombat>();
         if (player == null || combat == null) return;
-        var chests = Object.FindObjectsByType<TreasureChest>(FindObjectsSortMode.None);
+        var chests = TreasureChest.ActiveChests;
         TreasureChest nearestChest = null;
         float nearestSqr = card.lootRadius * card.lootRadius;
 
@@ -58,7 +58,7 @@ public class LootAction : IAction
 
         if (nearestChest == null) return;
 
-        // 璧板埌瀹濈鏃佽竟
+        // 鐠ф澘鍩岀€规繄顔堥弮浣界珶
         if (nearestSqr > 2.5f * 2.5f)
         {
             combat.ClearTarget();
@@ -66,9 +66,10 @@ public class LootAction : IAction
         }
         else
         {
-            // 澶熻繎浜嗭紝浜や簰寮€绠?            nearestChest.TryInteract();
+            // 婢剁喕绻庢禍鍡礉娴溿倓绨板鈧粻?            nearestChest.TryInteract();
         }
     }
 }
+
 
 

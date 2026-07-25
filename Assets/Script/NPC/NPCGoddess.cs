@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.AI;
 
 [RequireComponent(typeof(Health))]
@@ -37,8 +37,7 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
     public bool HasArrived { get { return movement != null && movement.HasArrived; } }
     public bool IsHealing { get { return healing != null && healing.IsHealing; } }
     public bool IsWalking { get { return movement != null && movement.IsWalking; } }
-    public WaypointPath WaypointPath { get { return movement != null ? movement.WaypointPath : null; } }
-    public int CurrentWaypointIndex { get { return movement != null ? movement.CurrentWaypointIndex : 0; } }
+    [System.Obsolete("Replaced by QuestManager.QuestManager")] public int TempAreaIndex { get { return 0; } }
 
     // ========================================
     // Public Events
@@ -80,10 +79,6 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
         {
             healing.OnHealStart += () => OnHealStart?.Invoke();
             healing.OnHealComplete += () => OnHealComplete?.Invoke();
-        }
-        if (movement != null)
-        {
-            movement.OnArrived += () => OnArrived?.Invoke();
         }
     }
 
@@ -152,10 +147,6 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
     }
 
     /// <summary>Called by NPCGoddessMovement when it arrives at the final waypoint.</summary>
-    public void NotifyArrived()
-    {
-        // Used by NPCGoddessMovement during TryArrive; animation will update via UpdateAnimation
-    }
 
     // ========================================
     // Animation

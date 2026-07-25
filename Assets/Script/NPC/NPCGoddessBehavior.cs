@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// NPC Ů���״̬��Ϊģ�� ���� ������ʲôʱ����ʲô����
@@ -269,12 +269,6 @@ public class NPCGoddessBehavior : MonoBehaviour
                     rescueStayTimer = 0f;
                     rescueCooldownTimer = rescueCooldownTime;
                     rescueForwardTimer = rescueForwardTime;
-                    if (movement.WaypointPath != null)
-                    {
-                        int nearest = movement.GetNearestWaypointIndex(transform.position);
-                        int next = movement.WaypointPath.GetNextIndex(nearest);
-                        movement.SetWaypointIndex(next > nearest ? next : nearest);
-                    }
                 }
             }
             else if (rescueTarget == null || rescueTarget.GetComponent<PlayerMove>() == null || rescueTarget.GetComponent<PlayerMove>().IsDead)

@@ -36,6 +36,7 @@ public enum NPCQuestState
     Searching,
     ReadyToCollect,
     InTransit,
+    Rescuing,
     AllComplete
 }
 
@@ -71,6 +72,11 @@ public class NPCGoddessMovement : MonoBehaviour
 
     [Header("Search Behavior")]
     [SerializeField] private float searchArriveDistance = 1.5f;
+
+    [Header("Rescue")]
+    [SerializeField] private float rescueHealthThreshold = 0.15f;
+    [SerializeField] private float rescuePlayerDistance = 25f;
+    private bool rescueUsedInTransit;
     [SerializeField] private float areaArriveDistance = 5f;
 
     // State
@@ -213,6 +219,8 @@ public class NPCGoddessMovement : MonoBehaviour
     public void SetQuestState(NPCQuestState newState)
     {
         if (currentState == newState) return;
+        if (newState == NPCQuestState.InTransit && currentState != NPCQuestState.InTransit)
+            rescueUsedInTransit = false;
         currentState = newState;
     }
 
@@ -322,14 +330,13 @@ public class NPCGoddessMovement : MonoBehaviour
             case NPCQuestState.Searching:
                 if (!hasSearchTarget && qm.CurrentArea != null)
                 {
-                    // Pick a random spawn point within the area
-                    searchTargetPosition = qm.GetCurrentAreaSpawnPoint();
-                    hasSearchTarget = true;
-
-                    // Spawn quest item visual at the search point
-                    var collector = GetComponent<QuestCollectionController>();
-                    if (collector != null)
-                        collector.SpawnQuestItemAt(searchTargetPosition);
+                    // Use the existing quest item position (placed by QuestManager)
+                    Vector3? itemPos = qm.GetCurrentItemPosition();
+                    if (itemPos.HasValue)
+                    {
+                        searchTargetPosition = itemPos.Value;
+                        hasSearchTarget = true;
+                    }
                 }
 
                 // Check if arrived at search target
@@ -353,6 +360,25 @@ public class NPCGoddessMovement : MonoBehaviour
                 break;
 
             case NPCQuestState.InTransit:
+                // Check rescue condition first
+                if (!rescueUsedInTransit && qm.CurrentArea != null)
+                {
+                    foreach (var player in PlayerMove.AllPlayers)
+                    {
+                        if (player == null || player.IsDead) continue;
+                        if (player.HealthPercent < rescueHealthThreshold)
+                        {
+                            float distToPlayer = transform.position.DistanceXZ(player.transform.position);
+                            if (distToPlayer < rescuePlayerDistance)
+                            {
+                                currentState = NPCQuestState.Rescuing;
+                                Debug.Log($"[NPCGoddessMovement] Rescuing player from {player.name}");
+                                break;
+                            }
+                        }
+                    }
+                    if (currentState == NPCQuestState.Rescuing) break;
+                }
                 // Navigate to next area entry point
                 if (qm.CurrentArea != null)
                 {
@@ -378,6 +404,40 @@ public class NPCGoddessMovement : MonoBehaviour
                 {
                     currentState = NPCQuestState.AllComplete;
                     Debug.Log("[NPCGoddessMovement] All quest areas complete!");
+                }
+                break;
+
+            case NPCQuestState.Rescuing:
+                // Check if players are safe now
+                bool playersSafe = true;
+                foreach (var player in PlayerMove.AllPlayers)
+                {
+                    if (player == null || player.IsDead) continue;
+                    if (player.HealthPercent < rescueHealthThreshold + 0.1f)
+                    {
+                        playersSafe = false;
+                        break;
+                    }
+                }
+                if (playersSafe)
+                {
+                    rescueUsedInTransit = true;
+                    currentState = NPCQuestState.InTransit;
+                    Debug.Log("[NPCGoddessMovement] Rescue complete, resuming transit");
+                    break;
+                }
+                // Check if reached midpoint
+                Vector3? rescueMid = qm.GetRescueMidpoint();
+                if (rescueMid.HasValue)
+                {
+                    float distToMid = transform.position.DistanceXZ(rescueMid.Value);
+                    if (distToMid <= searchArriveDistance)
+                    {
+                        rescueUsedInTransit = true;
+                        currentState = NPCQuestState.InTransit;
+                        Debug.Log("[NPCGoddessMovement] Reached rescue limit, returning to transit");
+                        break;
+                    }
                 }
                 break;
 
@@ -417,6 +477,15 @@ public class NPCGoddessMovement : MonoBehaviour
                         return nextTarget.Value;
                 }
                 break;
+
+            case NPCQuestState.Rescuing:
+                if (qm != null)
+                {
+                    Vector3? rescueMid = qm.GetRescueMidpoint();
+                    if (rescueMid.HasValue)
+                        return rescueMid.Value;
+                }
+                return transform.position;
 
             case NPCQuestState.ReadyToCollect:
                 // Stay in place during collection

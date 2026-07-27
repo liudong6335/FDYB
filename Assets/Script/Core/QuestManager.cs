@@ -27,12 +27,17 @@ using System.Collections.Generic;
 
 public class QuestManager : MonoBehaviour
 {
+    [Header("Quest Item")]
+    public GameObject questItemPrefab;
+
     [Header("Area Chain")]
     [Tooltip("按顺序排列的任务区域列表，从左到右依次推进")]
     [SerializeField] private List<QuestArea> areaChain = new List<QuestArea>();
 
     private int currentAreaIndex;
     private bool allAreasComplete;
+    private GameObject currentItemInstance;
+    private Vector3 currentItemPosition;
     private static QuestManager instance;
 
     // ========================================
@@ -94,6 +99,11 @@ public class QuestManager : MonoBehaviour
 
         area.IsCompleted = false;
         OnAreaEnter?.Invoke(area);
+
+        // Activate area monsters
+        var npc = FindFirstObjectByType<NPCGoddess>();
+        if (npc != null) area.ActivateMonsters(npc);
+
         Debug.Log($"[QuestManager] Entered area: {area.AreaId} (index {currentAreaIndex})");
     }
 
@@ -107,6 +117,12 @@ public class QuestManager : MonoBehaviour
         OnAreaComplete?.Invoke(area);
         Debug.Log($"[QuestManager] Completed area: {area.AreaId}");
 
+        // Destroy current quest item before advancing
+        DestroyCurrentAreaItem();
+
+        // Spawn reward chest at NPC position
+        SpawnChest();
+
         // Advance to next area
         currentAreaIndex++;
 
@@ -114,8 +130,17 @@ public class QuestManager : MonoBehaviour
         if (currentAreaIndex >= areaChain.Count)
         {
             allAreasComplete = true;
+            DestroyCurrentAreaItem();
+            // Clean up all remaining monsters
+            foreach (var a in areaChain)
+                if (a != null) a.DeactivateMonsters();
             OnAllAreasComplete?.Invoke();
             Debug.Log("[QuestManager] All quest areas completed!");
+        }
+        else
+        {
+            // Spawn next area quest item (visible before NPC arrives)
+            SpawnCurrentAreaItem();
         }
     }
 
@@ -166,6 +191,22 @@ public class QuestManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Get the midpoint between the previous area and the current area.
+    /// Used for rescue behavior - NPC moves back toward this point.
+    /// </summary>
+    public Vector3? GetRescueMidpoint()
+    {
+        if (currentAreaIndex <= 0 || currentAreaIndex >= areaChain.Count) return null;
+
+        QuestArea previous = areaChain[currentAreaIndex - 1];
+        QuestArea current = areaChain[currentAreaIndex];
+
+        if (previous == null || current == null) return null;
+
+        return (previous.Center + current.Center) * 0.5f;
+    }
+
+    /// <summary>
     /// Check if the NPC is currently in transit (between areas, not yet entered target).
     /// </summary>
     public bool IsInTransit(Vector3 npcPosition)
@@ -210,5 +251,90 @@ public class QuestManager : MonoBehaviour
                 Gizmos.DrawLine(mid + dir * 0.5f - perp * 0.3f, mid + dir * 0.5f);
             }
         }
+
+    }
+
+    // ============================================
+    // Quest Item Lifecycle
+    // ============================================
+
+    /// <summary>Spawn the quest item for the current area at a random spawn point.</summary>
+    private void SpawnChest()
+    {
+        QuestArea area = CurrentArea;
+        if (area == null) return;
+
+        var npc = FindFirstObjectByType<NPCGoddess>();
+        if (npc == null) return;
+
+        foreach (var drop in area.ChestDrops)
+        {
+            if (drop.chestPrefab == null) continue;
+            int count = Mathf.Max(1, drop.count);
+            float radius = drop.spawnRadius;
+
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 pos = npc.transform.position + new Vector3(
+                    Random.Range(-radius, radius),
+                    0f,
+                    Random.Range(-radius, radius)
+                );
+                GameObject chestObj = Instantiate(drop.chestPrefab, pos, Quaternion.identity);
+
+                // Add BoxCollider for click interaction if missing
+                if (chestObj.GetComponent<Collider>() == null)
+                {
+                    var bc = chestObj.AddComponent<BoxCollider>();
+                    bc.size = new Vector3(1f, 1f, 1f);
+                    bc.center = new Vector3(0f, 0.5f, 0f);
+                }
+
+                TreasureChest tc = chestObj.GetComponent<TreasureChest>();
+                if (tc == null) tc = chestObj.AddComponent<TreasureChest>();
+                if (tc != null) tc.Type = drop.chestType;
+            }
+        }
+    }
+
+    private void SpawnCurrentAreaItem()
+    {
+        Debug.Log("[QuestManager] SpawnCurrentAreaItem called, qp=" + (questItemPrefab != null) + " area=" + (CurrentArea != null));
+        DestroyCurrentAreaItem();
+        if (questItemPrefab == null) return;
+        QuestArea area = CurrentArea;
+        if (area == null) return;
+
+        currentItemPosition = area.GetRandomSpawnPoint();
+        currentItemInstance = Instantiate(questItemPrefab, currentItemPosition, Quaternion.identity);
+        currentItemInstance.transform.localScale = Vector3.one * 1.5f;
+
+        var questLight = currentItemInstance.AddComponent<Light>();
+        questLight.color = Color.yellow;
+        questLight.range = 6f;
+        questLight.intensity = 2.5f;
+        questLight.shadows = LightShadows.None;
+    }
+
+    /// <summary>Destroy the current quest item visual.</summary>
+    private void DestroyCurrentAreaItem()
+    {
+        if (currentItemInstance != null)
+        {
+            Destroy(currentItemInstance);
+            currentItemInstance = null;
+        }
+    }
+
+    /// <summary>Get the current quest item's world position.</summary>
+    public Vector3? GetCurrentItemPosition()
+    {
+        Debug.Log("[QuestManager] GetCurrentItemPosition: instance=" + (currentItemInstance != null) + " pos=" + currentItemPosition);
+        if (currentItemInstance != null)
+            return currentItemInstance.transform.position;
+        if (currentItemPosition != Vector3.zero)
+            return currentItemPosition;
+        return null;
     }
 }
+

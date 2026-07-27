@@ -28,7 +28,10 @@
  *   - 读条期间移动会取消
  */
 using UnityEngine;
+using UnityEngine.UI;
 using System.Collections.Generic;
+
+public enum ChestOpenState { Idle, Reading, OpeningItems, ItemFlying, Complete }
 
 public enum ChestType { Wooden, Copper, Silver, Gold }
 
@@ -36,8 +39,15 @@ public class TreasureChest : MonoBehaviour
 {
     [Header("Chest Settings")]
     [SerializeField] private ChestType chestType = ChestType.Wooden;
-    [SerializeField] private float openTime = 1f;
+
+    [Header("Opening")]
+    [SerializeField] private float readTime = 3f;
+    [SerializeField] private float hitPenalty = 0.8f;
     [SerializeField] private float interactDistance = 2f;
+    [SerializeField] private Transform itemSpawnPoint;
+    [SerializeField] private GameObject goldVisualPrefab;
+    [SerializeField] private float itemFlySpeed = 5f;
+    [SerializeField] private float openAnimationDelay = 0.3f;
 
     [Header("Visual")]
     [SerializeField] private GameObject closedVisual;
@@ -47,8 +57,16 @@ public class TreasureChest : MonoBehaviour
     private bool isOpened;
     private bool isOpening;
     private PlayerMove openingPlayer;
-    private float currentOpenTimer;
     private InventoryManager cachedInventory;
+    private ChestOpenState currentState = ChestOpenState.Idle;
+    private float currentReadProgress;
+    private float previousPlayerHealth;
+
+    // Progress bar
+    private GameObject barPanel;
+    private Image fillImage;
+    private readonly Vector3 barOffset = new Vector3(0f, 2.5f, 0f);
+    private readonly Vector2 barSize = new Vector2(80f, 8f);
 
     private float sqrInteractDistance;
     private float sqrInteractPadding;
@@ -57,7 +75,7 @@ public class TreasureChest : MonoBehaviour
     private static readonly List<TreasureChest> allChests = new List<TreasureChest>();
     public static IReadOnlyList<TreasureChest> ActiveChests => allChests;
 
-    public ChestType Type { get { return chestType; } }
+    public ChestType Type { get { return chestType; } set { chestType = value; } }
     public bool IsOpened { get { return isOpened; } }
     public bool IsOpening { get { return isOpening; } }
 
@@ -66,11 +84,13 @@ public class TreasureChest : MonoBehaviour
         allChests.Add(this);
         sqrInteractDistance = interactDistance * interactDistance;
         sqrInteractPadding = (interactDistance + 0.5f) * (interactDistance + 0.5f);
+        BuildProgressBar();
     }
 
     private void OnDestroy()
     {
         allChests.Remove(this);
+        if (barPanel != null) Destroy(barPanel);
     }
 
     private void Start()
@@ -78,22 +98,19 @@ public class TreasureChest : MonoBehaviour
         if (closedVisual != null) closedVisual.SetActive(true);
         if (openVisual != null) openVisual.SetActive(false);
         if (highlightEffect != null) highlightEffect.SetActive(false);
+        if (barPanel != null) barPanel.SetActive(false);
     }
 
     private void Update()
     {
         if (isOpened || !isOpening || openingPlayer == null) return;
 
-        float sqrDist = transform.position.SqrDistanceXZ(openingPlayer.transform.position);
-        if (sqrDist > sqrInteractPadding)
+        switch (currentState)
         {
-            CancelOpening();
-            return;
+            case ChestOpenState.Reading:
+                UpdateReading();
+                break;
         }
-
-        currentOpenTimer += Time.deltaTime;
-        if (currentOpenTimer >= openTime)
-            OpenChest(openingPlayer);
     }
 
     private void OnMouseDown()
@@ -125,27 +142,36 @@ public class TreasureChest : MonoBehaviour
     public void StartOpening(PlayerMove player)
     {
         if (isOpened || isOpening) return;
+        if (currentState != ChestOpenState.Idle) return;
+
         isOpening = true;
         openingPlayer = player;
-        currentOpenTimer = 0f;
+        currentState = ChestOpenState.Reading;
+        currentReadProgress = 0f;
+        previousPlayerHealth = player.CurrentHealth;
         if (highlightEffect != null) highlightEffect.SetActive(true);
+        ShowProgressBar();
     }
 
     private void CancelOpening()
     {
         isOpening = false;
         openingPlayer = null;
-        currentOpenTimer = 0f;
+        currentState = ChestOpenState.Idle;
+        currentReadProgress = 0f;
         if (highlightEffect != null) highlightEffect.SetActive(false);
+        if (barPanel != null) barPanel.SetActive(false);
     }
 
     private void OpenChest(PlayerMove player)
     {
         isOpened = true;
         isOpening = false;
+        currentState = ChestOpenState.Complete;
         if (closedVisual != null) closedVisual.SetActive(false);
         if (openVisual != null) openVisual.SetActive(true);
         if (highlightEffect != null) highlightEffect.SetActive(false);
+        if (barPanel != null) barPanel.SetActive(false);
 
         if (cachedInventory == null)
             cachedInventory = FindFirstObjectByType<InventoryManager>();
@@ -156,6 +182,100 @@ public class TreasureChest : MonoBehaviour
                 cachedInventory.AddItem(item, player);
         }
     }
+
+    private void UpdateReading()
+    {
+        float sqrDist = transform.position.SqrDistanceXZ(openingPlayer.transform.position);
+        if (sqrDist > sqrInteractPadding)
+        {
+            CancelOpening();
+            return;
+        }
+
+        // Hit detection: track health decrease
+        float currentHealth = openingPlayer.CurrentHealth;
+        if (currentHealth < previousPlayerHealth - 0.01f)
+        {
+            currentReadProgress -= hitPenalty;
+            currentReadProgress = Mathf.Max(0f, currentReadProgress);
+        }
+        previousPlayerHealth = currentHealth;
+
+        currentReadProgress += Time.deltaTime;
+        UpdateProgressBar();
+
+        if (currentReadProgress >= readTime)
+            OpenChest(openingPlayer);
+    }
+
+    private void BuildProgressBar()
+    {
+        HealthBarCanvas.EnsureSharedCanvas();
+        
+        barPanel = new GameObject("ChestBar_" + gameObject.name, typeof(RectTransform));
+        barPanel.transform.SetParent(HealthBarCanvas.SharedCanvasRect, false);
+        var panelRect = barPanel.GetComponent<RectTransform>();
+        panelRect.sizeDelta = barSize;
+
+        var bg = new GameObject("Bg", typeof(RectTransform), typeof(Image));
+        bg.transform.SetParent(panelRect.transform, false);
+        var bgImage = bg.GetComponent<Image>();
+        bgImage.color = new Color(0.15f, 0.15f, 0.15f, 0.85f);
+        var bgRt = bg.GetComponent<RectTransform>();
+        bgRt.anchorMin = Vector2.zero; bgRt.anchorMax = Vector2.one;
+        bgRt.offsetMin = Vector2.zero; bgRt.offsetMax = Vector2.zero;
+
+        var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+        fill.transform.SetParent(bg.transform, false);
+        fillImage = fill.GetComponent<Image>();
+        fillImage.color = Color.red;
+        fillImage.type = Image.Type.Filled;
+        fillImage.fillMethod = Image.FillMethod.Horizontal;
+        fillImage.fillOrigin = 0;
+        fillImage.fillAmount = 0f;
+        var fillRt = fill.GetComponent<RectTransform>();
+        fillRt.anchorMin = Vector2.zero; fillRt.anchorMax = Vector2.one;
+        fillRt.offsetMin = Vector2.zero; fillRt.offsetMax = Vector2.zero;
+
+        barPanel.SetActive(false);
+    }
+
+    private void ShowProgressBar()
+    {
+        if (barPanel != null) barPanel.SetActive(true);
+        if (fillImage != null) fillImage.fillAmount = 0f;
+    }
+
+    private void HideProgressBar()
+    {
+        if (barPanel != null) barPanel.SetActive(false);
+    }
+
+    private void UpdateProgressBar()
+    {
+        if (fillImage == null || barPanel == null || Camera.main == null) return;
+
+        float pct = Mathf.Clamp01(currentReadProgress / readTime);
+        fillImage.fillAmount = pct;
+
+        if (pct < 0.3f)
+            fillImage.color = Color.Lerp(Color.red, Color.yellow, pct / 0.3f);
+        else if (pct < 0.7f)
+            fillImage.color = Color.Lerp(Color.yellow, Color.green, (pct - 0.3f) / 0.4f);
+        else
+            fillImage.color = Color.Lerp(Color.green, new Color(0.2f, 0.85f, 0.2f), (pct - 0.7f) / 0.3f);
+
+        Vector3 worldPos = transform.position + barOffset;
+        Vector3 screenPos = Camera.main.WorldToScreenPoint(worldPos);
+        if (screenPos.z > 0f)
+        {
+            Vector2 anchoredPos;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                HealthBarCanvas.SharedCanvasRect, screenPos, null, out anchoredPos);
+            barPanel.GetComponent<RectTransform>().anchoredPosition = anchoredPos;
+        }
+    }
+
 
     private List<GameItem> GenerateLoot()
     {

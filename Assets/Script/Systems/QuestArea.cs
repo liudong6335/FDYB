@@ -48,6 +48,21 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+
+[System.Serializable]
+public class ChestDropConfig
+{
+    [Tooltip("宝箱掉落品质")]
+    public ChestType chestType = ChestType.Wooden;
+    [Tooltip("宝箱预制体")]
+    public GameObject chestPrefab;
+    [Tooltip("数量")]
+    public int count = 1;
+    [Tooltip("散布范围")]
+    public float spawnRadius = 3f;
+}
+
+
 public class QuestArea : MonoBehaviour
 {
     [Header("Area")]
@@ -61,13 +76,26 @@ public class QuestArea : MonoBehaviour
     [Tooltip("任务物品可能的刷出位置，运行时随机选一个")]
     [SerializeField] private List<Transform> spawnPoints = new List<Transform>();
 
-    [Header("Monster Config")]
+    [Header("Monsters")]
+    [Tooltip("该区域刷新的怪物预制体")]
+    public GameObject monsterPrefab;
     [SerializeField] private int monsterLevel = 1;
     [SerializeField] private int monsterCount = 3;
+    [SerializeField] private float demonReviveTime = 10f;
+    private NPCGoddess cachedNpc;
+    private List<GameObject> spawnedMonsters = new List<GameObject>();
+
+    private void OnDestroy()
+    {
+        DeactivateMonsters();
+    }
 
     [Header("NPC Entry")]
     [Tooltip("NPC 到达区域时的目标停留点（留空则自动选区域边缘靠近下一区域的方向）")]
     [SerializeField] private Transform entryPoint;
+
+    [Header("Chest Rewards")]
+    [SerializeField] private List<ChestDropConfig> chestDrops = new List<ChestDropConfig>();
 
     // State
     private bool isCompleted;
@@ -83,7 +111,58 @@ public class QuestArea : MonoBehaviour
     public int MonsterLevel { get { return monsterLevel; } }
     public int MonsterCount { get { return monsterCount; } }
     public bool IsCompleted { get { return isCompleted; } set { isCompleted = value; } }
+    public IReadOnlyList<ChestDropConfig> ChestDrops { get { return chestDrops; } }
     public bool RequiresItem { get { return requiresItem; } set { requiresItem = value; } }
+
+    // ========================================
+    // Monster Lifecycle
+    // ========================================
+
+    /// <summary>Spawn and activate monsters for this area.</summary>
+    public void ActivateMonsters(NPCGoddess npc)
+    {
+        if (monsterPrefab == null) return;
+
+        for (int i = 0; i < monsterCount; i++)
+        {
+            Vector3 pos = GetRandomSpawnPoint();
+            // Add small random offset so monsters don't stack
+            pos += new Vector3(Random.Range(-2f, 2f), 0f, Random.Range(-2f, 2f));
+            GameObject obj = Object.Instantiate(monsterPrefab, pos, Quaternion.identity);
+            spawnedMonsters.Add(obj);
+
+            DemonMinion demon = obj.GetComponent<DemonMinion>();
+            if (demon != null && demon.IsDormant)
+                demon.Activate(monsterLevel, npc);
+        }
+    }
+
+    private void HandleDemonDeath(DemonMinion demon)
+    {
+        StartCoroutine(ReviveDemonCoroutine(demon));
+    }
+
+    private System.Collections.IEnumerator ReviveDemonCoroutine(DemonMinion demon)
+    {
+        yield return new WaitForSeconds(demonReviveTime);
+
+        if (demon != null && demon.IsDead && cachedNpc != null)
+        {
+            int newLevel = Mathf.Min(monsterLevel + 1, 3);
+            demon.Revive(newLevel, cachedNpc);
+        }
+    }
+
+    /// <summary>Destroy all spawned monsters for this area.</summary>
+    public void DeactivateMonsters()
+    {
+        StopAllCoroutines();
+        foreach (var obj in spawnedMonsters)
+        {
+            if (obj != null) Object.Destroy(obj);
+        }
+        spawnedMonsters.Clear();
+    }
 
     // ========================================
     // Public Methods

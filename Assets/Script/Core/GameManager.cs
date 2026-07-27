@@ -151,43 +151,8 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        // Gradual demon activation
-        if (!phase1Complete)
-        {
-            demonActivateTimer -= Time.deltaTime;
-            if (demonActivateTimer <= 0f && activeMinions.Count < maxDemonMinions)
-            {
-                ActivateNextDormantDemon();
-                int aliveCount = activeMinions.Count;
-                float nextInterval;
-                if (aliveCount <= 0)
-                    nextInterval = demonSpawnIntervalMin;
-                else if (aliveCount >= maxDemonMinions - 1)
-                    nextInterval = demonSpawnIntervalMax;
-                else
-                {
-                    float t = (float)(aliveCount - 1) / (maxDemonMinions - 2);
-                    nextInterval = Mathf.Lerp(demonSpawnIntervalMin, demonSpawnIntervalMax, t);
-                }
-                demonActivateTimer = nextInterval;
-        }
-        }
-
-        // Boss awakening timer
+        // Boss awakening timer (kept for future use)
         bossAwakenTimer -= Time.deltaTime;
-
-        // Chest spawning
-
-        if (!phase1Complete)
-        {
-            chestSpawnTimer -= Time.deltaTime;
-            if (chestSpawnTimer <= 0f)
-            {
-                SpawnChests();
-
-                chestSpawnTimer = 60f / chestSpawnPerMinute;
-            }
-        }
 
         ApplyPenalty(player2);
         ApplyPenalty(player1);

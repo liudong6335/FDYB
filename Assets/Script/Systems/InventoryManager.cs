@@ -1,33 +1,33 @@
-/*
+﻿/*
  * ============================================================
- *  InventoryManager  -  背包/装备管理器
+ *  InventoryManager  -  鑳屽寘/瑁呭绠＄悊鍣?
  * ============================================================
  *
- * 【功能】
- *   管理两个玩家的装备栏、背包、金币。
- *   支持装备穿戴、自动合成、物品出售、使用消耗品。
- *   装备属性会自动同步到玩家（加血量/加伤害）。
+ * 銆愬姛鑳姐€?
+ *   绠＄悊涓や釜鐜╁鐨勮澶囨爮銆佽儗鍖呫€侀噾甯併€?
+ *   鏀寔瑁呭绌挎埓銆佽嚜鍔ㄥ悎鎴愩€佺墿鍝佸嚭鍞€佷娇鐢ㄦ秷鑰楀搧銆?
+ *   瑁呭灞炴€т細鑷姩鍚屾鍒扮帺瀹讹紙鍔犺閲?鍔犱激瀹筹級銆?
  *
- * 【挂载对象】
- *   场景中的单例对象（DontDestroyOnLoad）
+ * 銆愭寕杞藉璞°€?
+ *   鍦烘櫙涓殑鍗曚緥瀵硅薄锛圖ontDestroyOnLoad锛?
  *
- * 【可调节参数】
- *   startingItems  - 初始物品列表
- *   player1 / 2    - 两个玩家对象的引用
+ * 銆愬彲璋冭妭鍙傛暟銆?
+ *   startingItems  - 鍒濆鐗╁搧鍒楄〃
+ *   player1 / 2    - 涓や釜鐜╁瀵硅薄鐨勫紩鐢?
  *
- * 【物品类型】
- *   Equipment  - 装备（腕甲/胸甲/护肩/裤子/武器宝石）
- *   Consumable - 消耗品（生命药水）
- *   Currency   - 金币
+ * 銆愮墿鍝佺被鍨嬨€?
+ *   Equipment  - 瑁呭锛堣厱鐢?鑳哥敳/鎶よ偐/瑁ゅ瓙/姝﹀櫒瀹濈煶锛?
+ *   Consumable - 娑堣€楀搧锛堢敓鍛借嵂姘达級
+ *   Currency   - 閲戝竵
  *
- * 【装备合成】
- *   同一部位+同一属性+同品质的两件装备可以自动合成为更高品质
+ * 銆愯澶囧悎鎴愩€?
+ *   鍚屼竴閮ㄤ綅+鍚屼竴灞炴€?鍚屽搧璐ㄧ殑涓や欢瑁呭鍙互鑷姩鍚堟垚涓烘洿楂樺搧璐?
  *
- * 【外部调用】
- *   AddItem(item, player)      - 给玩家添加物品
- *   UseConsumable(id, player)  - 使用消耗品
- *   SellItem(id, player)       - 出售物品
- *   AddGold/SpendGold           - 增减金币
+ * 銆愬閮ㄨ皟鐢ㄣ€?
+ *   AddItem(item, player)      - 缁欑帺瀹舵坊鍔犵墿鍝?
+ *   UseConsumable(id, player)  - 浣跨敤娑堣€楀搧
+ *   SellItem(id, player)       - 鍑哄敭鐗╁搧
+ *   AddGold/SpendGold           - 澧炲噺閲戝竵
  */
 using UnityEngine;
 using System;
@@ -108,20 +108,21 @@ public class GameItem
     }
 }
 
+// Per-player inventory data container
+public class PlayerInventory
+{
+    public Dictionary<EquipmentSlotType, GameItem> Equipped = new Dictionary<EquipmentSlotType, GameItem>();
+    public List<GameItem> Backpack = new List<GameItem>();
+    public int Gold;
+}
+
+
 public class InventoryManager : MonoBehaviour
 {
     [Header("Starting Items")]
     [SerializeField] private List<GameItem> startingItems = new List<GameItem>();
 
-    // Player 1 inventory
-    private Dictionary<EquipmentSlotType, GameItem> p1Equipped = new Dictionary<EquipmentSlotType, GameItem>();
-    private List<GameItem> p1Backpack = new List<GameItem>();
-    private int p1Gold;
-
-    // Player 2 inventory
-    private Dictionary<EquipmentSlotType, GameItem> p2Equipped = new Dictionary<EquipmentSlotType, GameItem>();
-    private List<GameItem> p2Backpack = new List<GameItem>();
-    private int p2Gold;
+    private Dictionary<PlayerMove, PlayerInventory> playerInventories = new Dictionary<PlayerMove, PlayerInventory>();
 
     [SerializeField] private PlayerMove player1;
     [SerializeField] private PlayerMove player2;
@@ -145,6 +146,8 @@ public class InventoryManager : MonoBehaviour
             if (players.Length > 0 && player1 == null) player1 = players[0];
             if (players.Length > 1 && player2 == null) player2 = players[1];
         }
+        if (player1 != null) playerInventories[player1] = new PlayerInventory();
+        if (player2 != null) playerInventories[player2] = new PlayerInventory();
     }
 
     public void AddItem(GameItem item, PlayerMove player)
@@ -240,9 +243,13 @@ public class InventoryManager : MonoBehaviour
             }
         }
 
-        player.MaxHealthBonus = totalHPBonus;
-        player.DamageMultiplier = totalDPSMultiplier;
-        player.RefreshStats();
+        var ph = player.GetComponent<PlayerHealth>();
+        if (ph != null)
+        {
+            ph.MaxHealthBonus = totalHPBonus;
+            ph.DamageMultiplier = totalDPSMultiplier;
+            ph.RefreshStats();
+        }
     }
 
     public void UseConsumable(string itemId, PlayerMove player)
@@ -255,7 +262,7 @@ public class InventoryManager : MonoBehaviour
             // Heal effect
             if (item.healAmount > 0)
             {
-                player.Heal(item.healAmount);
+                player.GetComponent<Health>()?.Heal(item.healAmount);
             }
             OnInventoryChanged?.Invoke();
         }
@@ -272,7 +279,7 @@ public class InventoryManager : MonoBehaviour
             // Heal effect
             if (item.healAmount > 0)
             {
-                target.Heal(item.healAmount);
+                target.GetComponent<Health>()?.Heal(item.healAmount);
             }
             OnInventoryChanged?.Invoke();
         }
@@ -293,48 +300,54 @@ public class InventoryManager : MonoBehaviour
 
     public void AddGold(int amount, PlayerMove player)
     {
-        if (player == player1) p1Gold += amount;
-        else if (player == player2) p2Gold += amount;
+        var inv = GetInventory(player);
+        if (inv != null) inv.Gold += amount;
         OnInventoryChanged?.Invoke();
     }
 
     public List<GameItem> GetPlayerBackpack(PlayerMove player)
     {
-        if (player == player1) return p1Backpack;
-        if (player == player2) return p2Backpack;
-        return p1Backpack;
+        var inv = GetInventory(player);
+        return inv != null ? inv.Backpack : null;
     }
 
     public int GetGold(PlayerMove player)
     {
-        if (player == player1) return p1Gold;
-        if (player == player2) return p2Gold;
-        return 0;
+        var inv = GetInventory(player);
+        return inv != null ? inv.Gold : 0;
     }
 
     public bool SpendGold(int amount, PlayerMove player)
     {
-        if (player == player1 && p1Gold >= amount) { p1Gold -= amount; OnInventoryChanged?.Invoke(); return true; }
-        if (player == player2 && p2Gold >= amount) { p2Gold -= amount; OnInventoryChanged?.Invoke(); return true; }
+        var inv = GetInventory(player);
+        if (inv != null && inv.Gold >= amount) { inv.Gold -= amount; OnInventoryChanged?.Invoke(); return true; }
         return false;
+    }
+
+    private PlayerInventory GetInventory(PlayerMove player)
+    {
+        if (playerInventories.TryGetValue(player, out var inv)) return inv;
+        var newInv = new PlayerInventory();
+        playerInventories[player] = newInv;
+        return newInv;
     }
 
     private Dictionary<EquipmentSlotType, GameItem> GetEquipped(PlayerMove player)
     {
-        return player == player1 ? p1Equipped : p2Equipped;
+        return GetInventory(player)?.Equipped;
     }
 
     private List<GameItem> GetBackpack(PlayerMove player)
     {
-        return player == player1 ? p1Backpack : p2Backpack;
+        return GetInventory(player)?.Backpack;
     }
 
-    public Dictionary<EquipmentSlotType, GameItem> GetP1Equipped() { return p1Equipped; }
-    public Dictionary<EquipmentSlotType, GameItem> GetP2Equipped() { return p2Equipped; }
-    public List<GameItem> GetP1Backpack() { return p1Backpack; }
-    public List<GameItem> GetP2Backpack() { return p2Backpack; }
-    public int P1Gold { get { return p1Gold; } }
-    public int P2Gold { get { return p2Gold; } }
+    public Dictionary<EquipmentSlotType, GameItem> GetP1Equipped() { return player1 != null ? GetInventory(player1).Equipped : null; }
+    public Dictionary<EquipmentSlotType, GameItem> GetP2Equipped() { return player2 != null ? GetInventory(player2).Equipped : null; }
+    public List<GameItem> GetP1Backpack() { return player1 != null ? GetInventory(player1).Backpack : null; }
+    public List<GameItem> GetP2Backpack() { return player2 != null ? GetInventory(player2).Backpack : null; }
+    public int P1Gold { get { return player1 != null ? GetInventory(player1).Gold : 0; } }
+    public int P2Gold { get { return player2 != null ? GetInventory(player2).Gold : 0; } }
 }
 
 

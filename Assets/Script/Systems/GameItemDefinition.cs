@@ -26,4 +26,22 @@ public class GameItemDefinition : ScriptableObject
 
     [Header("Currency")]
     public int goldAmount;
+    /// <summary>Convert this definition to a runtime GameItem instance.</summary>
+    public GameItem ToGameItem()
+    {
+        return new GameItem
+        {
+            itemType = itemType,
+            itemId = itemId,
+            itemName = itemName,
+            description = description,
+            rarity = rarity,
+            slotType = slotType,
+            statType = statType,
+            statValue = statValue,
+            healAmount = healAmount,
+            goldAmount = goldAmount,
+            definition = this
+        };
+    }
 }

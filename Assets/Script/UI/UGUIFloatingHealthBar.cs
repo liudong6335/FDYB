@@ -1,29 +1,29 @@
-/*
+﻿/*
  * ============================================================
- *  UGUIFloatingHealthBar  -  浮动血条（怪物/通用）
+ *  UGUIFloatingHealthBar  -  娴姩琛€鏉★紙鎬墿/閫氱敤锛?
  * ============================================================
  *
- * 【功能】
- *   在物体头顶显示血条，跟随物体在屏幕上的位置移动。
- *   血条颜色随血量变化（绿→黄→红），有平滑过渡效果。
- *   所有血条共享一个画布（HealthBarsCanvas）。
+ * 銆愬姛鑳姐€?
+ *   鍦ㄧ墿浣撳ご椤舵樉绀鸿鏉★紝璺熼殢鐗╀綋鍦ㄥ睆骞曚笂鐨勪綅缃Щ鍔ㄣ€?
+ *   琛€鏉￠鑹查殢琛€閲忓彉鍖栵紙缁库啋榛勨啋绾級锛屾湁骞虫粦杩囨浮鏁堟灉銆?
+ *   鎵€鏈夎鏉″叡浜竴涓敾甯冿紙HealthBarsCanvas锛夈€?
  *
- * 【挂载对象】
- *   需要显示血条的游戏对象（怪物/物体等）
+ * 銆愭寕杞藉璞°€?
+ *   闇€瑕佹樉绀鸿鏉＄殑娓告垙瀵硅薄锛堟€墿/鐗╀綋绛夛級
  *
- * 【可调节参数】
- *   healthProvider   - 血量数据提供者（实现 IHealthProvider 接口）
- *   offset           - 血条相对头顶的偏移
- *   barWidth/Height  - 血条尺寸
- *   borderThick      - 边框厚度
- *   frameColor       - 边框颜色
- *   bgColor          - 背景色
- *   high/mid/lowColor- 高/中/低血量颜色
- *   smoothSpeed      - 血条变化平滑速度
- *   hideAtFullHealth - 满血时是否隐藏
+ * 銆愬彲璋冭妭鍙傛暟銆?
+ *   healthProvider   - 琛€閲忔暟鎹彁渚涜€咃紙瀹炵幇 IHealthProvider 鎺ュ彛锛?
+ *   offset           - 琛€鏉＄浉瀵瑰ご椤剁殑鍋忕Щ
+ *   barWidth/Height  - 琛€鏉″昂瀵?
+ *   borderThick      - 杈规鍘氬害
+ *   frameColor       - 杈规棰滆壊
+ *   bgColor          - 鑳屾櫙鑹?
+ *   high/mid/lowColor- 楂?涓?浣庤閲忛鑹?
+ *   smoothSpeed      - 琛€鏉″彉鍖栧钩婊戦€熷害
+ *   hideAtFullHealth - 婊¤鏃舵槸鍚﹂殣钘?
  *
- * 【说明】
- *   代码运行时动态生成UI，不需要在Canvas下手动创建
+ * 銆愯鏄庛€?
+ *   浠ｇ爜杩愯鏃跺姩鎬佺敓鎴怳I锛屼笉闇€瑕佸湪Canvas涓嬫墜鍔ㄥ垱寤?
  */
 using UnityEngine;
 using UnityEngine.UI;
@@ -31,7 +31,7 @@ using UnityEngine.UI;
 /// <summary>
 /// UGUI overlay health bar replacing the legacy OnGUI FloatingHealthBar.
 /// Renders on a shared Screen Space Overlay Canvas for native resolution,
-/// positioning via Camera.WorldToScreenPoint 鈥?no world-space jitter or aliasing.
+/// positioning via Camera.WorldToScreenPoint 閳?no world-space jitter or aliasing.
 /// </summary>
 public class UGUIFloatingHealthBar : MonoBehaviour
 {
@@ -54,6 +54,7 @@ public class UGUIFloatingHealthBar : MonoBehaviour
     [Header("Behavior")]
     [SerializeField] private float smoothSpeed = 8f;
     [SerializeField] private bool hideAtFullHealth;
+    public bool HideAtFullHealth { get { return hideAtFullHealth; } set { hideAtFullHealth = value; } }
 
     #endregion
 
@@ -99,15 +100,15 @@ public class UGUIFloatingHealthBar : MonoBehaviour
     private void BuildBar()
     {
         // Destroy any lingering panel from a previous scene load (DontDestroyOnLoad canvas)
-        var oldPanel = HealthBarCanvas.SharedCanvasRect.Find("HB_" + gameObject.name);
-        if (oldPanel != null) GameObject.DestroyImmediate(oldPanel.gameObject);
+        string panelName = "HB_" + gameObject.GetInstanceID();
+
 
         Debug.Log("[UGUIFloatingHealthBar] BuildBar for: " + gameObject.name + " | path: " + GetFullPath() + " | ID: " + gameObject.GetInstanceID());
         totalW = barWidth + borderThick * 2f;
         totalH = barHeight + borderThick * 2f;
 
         // Panel root
-        var panelGo = new GameObject("HB_" + gameObject.name, typeof(RectTransform));
+        var panelGo = new GameObject(panelName, typeof(RectTransform));
         panelGo.transform.SetParent(HealthBarCanvas.SharedCanvasRect, false);
         panelRect = panelGo.GetComponent<RectTransform>();
         panelRect.sizeDelta = new Vector2(totalW, totalH);

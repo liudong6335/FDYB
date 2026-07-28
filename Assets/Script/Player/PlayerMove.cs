@@ -1,46 +1,39 @@
-/*
+﻿/*
  * ============================================================
  *  PlayerMove  -  Player Movement + Combat Controller
  * ============================================================
  *
- * 【Functions】
- *   Handles player movement: click-to-move (MOBA style),
+ * 銆怓unctions銆? *   Handles player movement: click-to-move (MOBA style),
  *   WASD keyboard movement, auto-chase enemies, speed boost (Q key).
  *   Works with PlayerHealth and PlayerCombat.
  *
- * 【Singleton】
- *   PlayerMove instances register to the static AllPlayers list.
+ * 銆怱ingleton銆? *   PlayerMove instances register to the static AllPlayers list.
  *   Each player object also has PlayerHealth and PlayerCombat.
  *
- * 【Adjustable Parameters】
- *   Movement:
+ * 銆怉djustable Parameters銆? *   Movement:
  *   moveSpeed              - Base movement speed
  *   rotationSpeed          - Rotation speed
  *   stoppingDistance       - Distance to stop from destination
- *   groundLayer            - Ground layer for raycasting
  *
  *   Speed Boost - Q Key:
  *   speedBoostMultiplier   - Speed multiplier when boosted
  *   speedBoostDuration     - Duration of speed boost
  *   speedBoostCooldown     - Cooldown time
- *   speedBoostKey          - Hotkey (default Q)
  *
- * 【Control Scheme】
- *   - Left click on enemy = engage combat
+ * 銆怌ontrol Scheme銆? *   - Left click on enemy = engage combat
  *   - Left click on ground = move
  *   - WASD = keyboard movement
  *   - Q = speed boost
  *
- * 【Note】
- *   Uses CharacterController for movement with collision blocking.
+ * 銆怤ote銆? *   Uses CharacterController for movement with collision blocking.
  */
 using UnityEngine;
-using UnityEngine.EventSystems;
 using System.Collections.Generic;
 
 [RequireComponent(typeof(PlayerHealth))]
 [RequireComponent(typeof(PlayerCombat))]
-public class PlayerMove : MonoBehaviour, IDamageable
+[RequireComponent(typeof(PlayerInputController))]
+public class PlayerMove : MonoBehaviour
 {
     #region Serialized Fields
 
@@ -48,14 +41,12 @@ public class PlayerMove : MonoBehaviour, IDamageable
     [SerializeField] private float moveSpeed = 4f;
     [SerializeField] private float rotationSpeed = 14f;
     [SerializeField] private float stoppingDistance = 0.2f;
-    [SerializeField] private LayerMask groundLayer;
 
     [Header("Skill - Speed Boost")]
 
     [SerializeField] private float speedBoostMultiplier = 1.5f;
     [SerializeField] private float speedBoostDuration = 3f;
     [SerializeField] private float speedBoostCooldown = 30f;
-    [SerializeField] private KeyCode speedBoostKey = KeyCode.Q;
 
     [Header("Animation")]
     [SerializeField] private Animator animator;
@@ -74,7 +65,6 @@ public class PlayerMove : MonoBehaviour, IDamageable
     private PlayerHealth playerHealth;
     private PlayerCombat playerCombat;
     private CharacterController cc;
-    private Camera mainCamera;
     private Vector3 moveDestination;
     private bool isPlayerAI;
    private bool hasMoveCommand;
@@ -97,19 +87,7 @@ public class PlayerMove : MonoBehaviour, IDamageable
     public float SpeedBoostCooldownRemaining { get { return Mathf.Max(0f, speedBoostNextTime - Time.time); } }
     public float SpeedBoostCooldownTotal { get { return speedBoostCooldown; } }
 
-    // Pass-through to PlayerHealth (backward compat for GameManager / NPCGoddess)
-    public float CurrentHealth { get { return playerHealth != null ? playerHealth.CurrentHealth : 0f; } }
-    public float HealthPercent { get { return playerHealth != null ? playerHealth.HealthPercent : 1f; } }
     public bool IsDead { get { return playerHealth == null || playerHealth.CurrentHealth <= 0f; } }
-    public float EffectiveMaxHealth { get { return playerHealth != null ? playerHealth.EffectiveMaxHealth : 0f; } }
-    public void TakeDamage(float dmg) { playerHealth?.TakeDamage(dmg); }
-    public void Heal(float amount) { playerHealth?.TakeDamage(-amount); }
-    public float BaseDamage { get { return playerHealth != null ? playerHealth.BaseDamage : 0f; } set { if (playerHealth != null) playerHealth.BaseDamage = value; } }
-    public float DamageMultiplier { get { return playerHealth != null ? playerHealth.DamageMultiplier : 1f; } set { if (playerHealth != null) playerHealth.DamageMultiplier = value; } }
-    public float MaxHealthBonus { get { return playerHealth != null ? playerHealth.MaxHealthBonus : 0f; } set { if (playerHealth != null) playerHealth.MaxHealthBonus = value; } }
-    public float EffectiveDamage { get { return playerHealth != null ? playerHealth.EffectiveDamage : 0f; } }
-    public float EffectiveAttackRange { get { return playerHealth != null ? playerHealth.EffectiveAttackRange : 0f; } }
-    public void RefreshStats() { playerHealth?.RefreshStats(); }
 
     #endregion
 
@@ -119,7 +97,6 @@ public class PlayerMove : MonoBehaviour, IDamageable
         slowEffect = GetComponent<DamageSlowEffect>();
        playerHealth = GetComponent<PlayerHealth>();
         playerCombat = GetComponent<PlayerCombat>();
-        mainCamera = Camera.main;
         // Migrate to CharacterController (collision blocking without physics push)
         cc = GetComponent<CharacterController>();
         if (cc == null)
@@ -140,61 +117,12 @@ public class PlayerMove : MonoBehaviour, IDamageable
     {
         if (playerHealth != null && playerHealth.CurrentHealth <= 0f) return;
 
-        if (!isPlayerAI) { HandleMouseInput(); HandleKeyboardMovement(); }
         UpdateSpeedBoostTimer();
         playerCombat.UpdateCombat();
         MoveTowardDestination();
         UpdateAnimation();
     }
 
-    #region Input
-
-    private void HandleMouseInput()
-    {
-        if (!Input.GetMouseButtonDown(0)) return;
-        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
-
-        Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
-
-        // Click enemy -> engage combat
-        if (playerCombat.EnemyLayerMask.value != 0 &&
-            Physics.Raycast(ray, out RaycastHit enemyHit, 500f, playerCombat.EnemyLayerMask, QueryTriggerInteraction.Collide))
-        {
-            bool inRange = playerCombat.TryEngage(enemyHit.collider.transform);
-            hasMoveCommand = !inRange;
-            if (!inRange) moveDestination = enemyHit.point;
-            MovementUtility.FaceDirection(transform, enemyHit.point - transform.position, rotationSpeed, Time.deltaTime);
-            return;
-        }
-
-        // Click ground -> move
-        if (Physics.Raycast(ray, out RaycastHit groundHit, 500f, groundLayer, QueryTriggerInteraction.Ignore))
-        {
-            playerCombat.ClearTarget();
-            hasMoveCommand = true;
-            moveDestination = groundHit.point;
-        }
-    }
-
-    private void HandleKeyboardMovement()
-    {
-        float h = Input.GetAxisRaw("Horizontal");
-        float v = Input.GetAxisRaw("Vertical");
-
-        if (Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f)
-        {
-            Vector3 dir = new Vector3(h, 0f, v).normalized;
-            float effectiveSpeed = GetEffectiveSpeed();
-            Vector3 moveDelta = dir * effectiveSpeed * Time.deltaTime;
-            moveDelta.y = cc.isGrounded ? -0.1f : moveDelta.y - 9.81f * Time.deltaTime;
-            cc.Move(moveDelta);
-            MovementUtility.FaceDirection(transform, dir, rotationSpeed, Time.deltaTime);
-            hasMoveCommand = false;
-            playerCombat.ClearTarget();
-        }
-    }
-
-    #endregion
 
     #region Speed Boost
 
@@ -286,6 +214,17 @@ public class PlayerMove : MonoBehaviour, IDamageable
             hasMoveCommand = true;
         }
 
+        // Keyboard movement mode (WASD)
+        if (keyboardDirection.sqrMagnitude > 0.1f)
+        {
+            float keyboardSpeed = GetEffectiveSpeed();
+            Vector3 moveDelta = keyboardDirection * keyboardSpeed * Time.deltaTime;
+            moveDelta.y = cc.isGrounded ? -0.1f : moveDelta.y - 9.81f * Time.deltaTime;
+            cc.Move(moveDelta);
+            MovementUtility.FaceDirection(transform, keyboardDirection, rotationSpeed, Time.deltaTime);
+            return;
+        }
+
         if (!hasMoveCommand) return;
 
         Vector3 flatDest = moveDestination;
@@ -321,9 +260,7 @@ public class PlayerMove : MonoBehaviour, IDamageable
         }
         else
         {
-            float h = Input.GetAxisRaw("Horizontal");
-            float v = Input.GetAxisRaw("Vertical");
-            bool keyboardMoving = Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f;
+            bool keyboardMoving = keyboardDirection.sqrMagnitude > 0.1f;
             moving = keyboardMoving || hasMoveCommand;
         }
         if (playerCombat.IsAttackLocked) moving = false;

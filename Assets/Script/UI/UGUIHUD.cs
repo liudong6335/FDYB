@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
@@ -11,7 +11,7 @@ using UnityEngine.UI;
 public class UGUIHUD : MonoBehaviour
 {
     [Header("References")]
-    [SerializeField] private GameManager gameManager;
+    [SerializeField] private EscortPhaseController escortController;
     [SerializeField] private PlayerMove player1;
     [SerializeField] private PlayerMove player2;
 
@@ -68,7 +68,7 @@ public class UGUIHUD : MonoBehaviour
 
     private void Start()
     {
-        if (gameManager == null) gameManager = FindFirstObjectByType<GameManager>();
+        if (escortController == null) escortController = FindFirstObjectByType<EscortPhaseController>();
         inventoryManager = FindFirstObjectByType<InventoryManager>();
         if (player1 == null || player2 == null)
         {
@@ -82,9 +82,9 @@ public class UGUIHUD : MonoBehaviour
 
     private void Update()
     {
-        if (gameManager == null) return;
+        if (escortController == null) return;
 
-        topBar.Refresh(gameManager);
+        topBar.Refresh(escortController);
         RefreshPlayerPanel(p1PanelCtrl, player1);
         RefreshPlayerPanel(p2PanelCtrl, player2);
     }

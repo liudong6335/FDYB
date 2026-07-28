@@ -166,7 +166,7 @@ public class NPCGoddessBehavior : MonoBehaviour
         foreach (var p in PlayerMove.AllPlayers)
         {
             if (p == null || p.IsDead) continue;
-            float hp = p.HealthPercent;
+            var behHp = p.GetComponent<Health>(); float hp = behHp != null ? behHp.HealthPercent : 1f;
             if (hp >= rescueHpThreshold) continue;
             float dist = transform.position.DistanceXZ(p.transform.position);
             bool emergency = hp < emergencyHpThreshold;

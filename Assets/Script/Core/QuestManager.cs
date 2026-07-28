@@ -131,9 +131,9 @@ public class QuestManager : MonoBehaviour
         {
             allAreasComplete = true;
             DestroyCurrentAreaItem();
-            // Clean up all remaining monsters
+            // Stop revivals, keep alive monsters patrolling
             foreach (var a in areaChain)
-                if (a != null) a.DeactivateMonsters();
+                if (a != null) a.OnAllAreasComplete();
             OnAllAreasComplete?.Invoke();
             Debug.Log("[QuestManager] All quest areas completed!");
         }
@@ -272,10 +272,11 @@ public class QuestManager : MonoBehaviour
             if (drop.chestPrefab == null) continue;
             int count = Mathf.Max(1, drop.count);
             float radius = drop.spawnRadius;
+            Vector3 center = area.Center;
 
             for (int i = 0; i < count; i++)
             {
-                Vector3 pos = npc.transform.position + new Vector3(
+                Vector3 pos = center + new Vector3(
                     Random.Range(-radius, radius),
                     0f,
                     Random.Range(-radius, radius)

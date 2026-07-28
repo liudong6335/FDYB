@@ -74,17 +74,66 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 72efea2460060f243b1dbcff5a5643c9, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 9089971604338558384}
+      addedObject: {fileID: 920082945397427216}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 72efea2460060f243b1dbcff5a5643c9, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 4181414875654978278}
+      addedObject: {fileID: 46821626619721}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 72efea2460060f243b1dbcff5a5643c9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -5190718666215915971}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 72efea2460060f243b1dbcff5a5643c9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7416139103110782285}
   m_SourcePrefab: {fileID: 100100000, guid: 72efea2460060f243b1dbcff5a5643c9, type: 3}
 --- !u!1 &6111868944576014992 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 72efea2460060f243b1dbcff5a5643c9, type: 3}
   m_PrefabInstance: {fileID: 6345802487584053185}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &9089971604338558384
+--- !u!95 &920082945397427216
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6111868944576014992}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 405fd7d589605d944a3d77ae0b13357f, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!65 &46821626619721
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6111868944576014992}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 4, y: 3, z: 4}
+  m_Center: {x: 0, y: 1.5, z: 0}
+--- !u!114 &-5190718666215915971
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -93,46 +142,43 @@ MonoBehaviour:
   m_GameObject: {fileID: 6111868944576014992}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 04a36210f31f8ac4ead6a0e3e6ce6218, type: 3}
+  m_Script: {fileID: 11500000, guid: d1e2f3a4b5c6d7e8f9a0b1c2d3e4f505, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UGUIFloatingHealthBar
-  healthProvider: {fileID: 0}
-  offset: {x: 0, y: 2.8, z: 0}
-  barWidth: 120
-  barHeight: 10
+  m_EditorClassIdentifier: Assembly-CSharp::TreasureChest
+  chestType: 0
+  readTime: 3
+  hitPenalty: 0.8
+  interactDistance: 2
+  destroyDelay: 3
+  progressBar: {fileID: 7416139103110782285}
+  openAnimationDelay: 0.3
+  itemSpawnPoint: {fileID: 0}
+  goldVisualPrefab: {fileID: 0}
+  itemFlySpeed: 5
+  chestAnimator: {fileID: 920082945397427216}
+  chestOpenTrigger: Open
+  playerOpenTriggerName: Open
+  closedVisual: {fileID: 0}
+  openVisual: {fileID: 0}
+  highlightEffect: {fileID: 0}
+--- !u!114 &7416139103110782285
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6111868944576014992}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e23ebaee67eed0844be487b77d806228, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProgressBarUI
+  barSize: {x: 100, y: 8}
+  worldOffset: {x: 0, y: 2.5, z: 0}
   borderThick: 2
   frameColor: {r: 0.05, g: 0.05, b: 0.05, a: 0.9}
   bgColor: {r: 0.15, g: 0.15, b: 0.15, a: 0.85}
-  highColor: {r: 0.2, g: 0.85, b: 0.2, a: 1}
-  midColor: {r: 1, g: 0.85, b: 0.1, a: 1}
   lowColor: {r: 0.9, g: 0.15, b: 0.15, a: 1}
-  smoothSpeed: 8
-  hideAtFullHealth: 0
---- !u!114 &4181414875654978278
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6111868944576014992}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a1b2c3d4e5f6a7b8c9d0e1f2a3b4c501, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Health
-  maxHealth: 100
-  currentHealth: 0
-  enableRegen: 1
-  regenPerSecond: 1
-  regenDelayAfterDamage: 3
-  disableRegenInCombat: 1
-  combatTimeout: 5
-  onHealthChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  onDeath:
-    m_PersistentCalls:
-      m_Calls: []
-  onRevive:
-    m_PersistentCalls:
-      m_Calls: []
+  midColor: {r: 1, g: 0.85, b: 0.1, a: 1}
+  highColor: {r: 0.2, g: 0.85, b: 0.2, a: 1}
+  startHidden: 1

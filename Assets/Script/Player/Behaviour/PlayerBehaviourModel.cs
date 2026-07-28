@@ -75,7 +75,7 @@ public class PlayerBehaviourModel : BehaviourModelBase
             if (sqrDist < aggroSqr)
             {
                 ctx.nearbyEnemyCount++;
-                ctx.totalEnemyHealth += e.CurrentHealth;
+                ctx.totalEnemyHealth += e.GetComponent<PlayerHealth>()?.CurrentHealth ?? 0f;
                 if (sqrDist < nearestSqr) { nearestSqr = sqrDist; ctx.nearestEnemyDistance = Mathf.Sqrt(sqrDist); }
             }
         }

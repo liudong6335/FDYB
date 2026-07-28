@@ -152,14 +152,6 @@ public class NPCGoddess : MonoBehaviour, IHealthProvider, IDamageable
     // Animation
     // ========================================
 
-    public void AnimSetTrigger(string paramName)
-    {
-        if (animator == null || string.IsNullOrEmpty(paramName)) return;
-        foreach (var p in animator.parameters)
-            if (p.name == paramName && p.type == AnimatorControllerParameterType.Trigger)
-            { animator.SetTrigger(paramName); return; }
-    }
-
     public void AnimSetTrigger(int paramHash)
     {
         if (animator == null) return;

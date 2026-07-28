@@ -1,27 +1,27 @@
-/*
+﻿/*
  * ============================================================
- *  PlayerCombat  -  玩家战斗系统
+ *  PlayerCombat  -  鐜╁鎴樻枟绯荤粺
  * ============================================================
  *
- * 【功能】
- *   管理玩家的战斗逻辑：选择目标、攻击、发射投射物、
- *   追击/脱离判定。与 PlayerMove 和 PlayerHealth 配合使用。
+ * 銆愬姛鑳姐€?
+ *   绠＄悊鐜╁鐨勬垬鏂楅€昏緫锛氶€夋嫨鐩爣銆佹敾鍑汇€佸彂灏勬姇灏勭墿銆?
+ *   杩藉嚮/鑴辩鍒ゅ畾銆備笌 PlayerMove 鍜?PlayerHealth 閰嶅悎浣跨敤銆?
  *
- * 【挂载对象】
- *   玩家对象（与 PlayerMove 在同一对象）
+ * 銆愭寕杞藉璞°€?
+ *   鐜╁瀵硅薄锛堜笌 PlayerMove 鍦ㄥ悓涓€瀵硅薄锛?
  *
- * 【可调节参数】
- *   attackCooldown         - 攻击冷却时间（秒）
- *   attackLockTime         - 攻击锁定时间（期间不能移动）
- *   chaseMaxDistance       - 最大追击距离（超出则放弃目标）
- *   enemyLayer             - 敌人所在的层级
- *   attackProjectilePrefab - 攻击投射物预制体
- *   projectileSpawnPoint   - 投射物生成位置
- *   projectileSpeed        - 投射物飞行速度
+ * 銆愬彲璋冭妭鍙傛暟銆?
+ *   attackCooldown         - 鏀诲嚮鍐峰嵈鏃堕棿锛堢锛?
+ *   attackLockTime         - 鏀诲嚮閿佸畾鏃堕棿锛堟湡闂翠笉鑳界Щ鍔級
+ *   chaseMaxDistance       - 鏈€澶ц拷鍑昏窛绂伙紙瓒呭嚭鍒欐斁寮冪洰鏍囷級
+ *   enemyLayer             - 鏁屼汉鎵€鍦ㄧ殑灞傜骇
+ *   attackProjectilePrefab - 鏀诲嚮鎶曞皠鐗╅鍒朵綋
+ *   projectileSpawnPoint   - 鎶曞皠鐗╃敓鎴愪綅缃?
+ *   projectileSpeed        - 鎶曞皠鐗╅琛岄€熷害
  *
- * 【说明】
- *   - 没有投射物预制体时使用射线检测直接造成伤害
- *   - 攻击怪物（DemonMinion）会自动注册仇恨
+ * 銆愯鏄庛€?
+ *   - 娌℃湁鎶曞皠鐗╅鍒朵綋鏃朵娇鐢ㄥ皠绾挎娴嬬洿鎺ラ€犳垚浼ゅ
+ *   - 鏀诲嚮鎬墿锛圖emonMinion锛変細鑷姩娉ㄥ唽浠囨仺
  */
 using UnityEngine;
 using System.Collections;
@@ -62,6 +62,7 @@ public class PlayerCombat : MonoBehaviour
         playerHealth = GetComponent<PlayerHealth>();
         if (animator == null) animator = GetComponent<Animator>();
         if (projectileSpawnPoint == null) projectileSpawnPoint = transform;
+        attackParameterHash = Animator.StringToHash(attackParameter);
     }
 
     private void Start()

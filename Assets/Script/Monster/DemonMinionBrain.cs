@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// Decision module for DemonMinion.
@@ -18,12 +18,24 @@ public class DemonMinionBrain : MonoBehaviour
     /// <summary>Evaluate all potential targets and set the best one on DemonMinion.</summary>
     public void DetermineTarget()
     {
+        NPCGoddess npc = demon.TargetNPC;
+
+        // If NPC has arrived, monster loses its attack target → auto patrol, no new targets
+        if (npc != null && npc.HasArrived)
+        {
+            demon.ClearTarget();
+            demon.ClearAttacker();
+            return;
+        }
+
         // == First priority: revenge the attacker ==
         Transform attacker = demon.AttackerTransform;
         if (attacker != null)
         {
             var attackerDamageable = attacker.GetComponent<IDamageable>();
-            if (attackerDamageable != null && attackerDamageable.IsDead)
+            var attackerPlayerHealth = attackerDamageable == null ? attacker.GetComponent<PlayerHealth>() : null;
+            if ((attackerDamageable != null && attackerDamageable.IsDead) ||
+                (attackerPlayerHealth != null && attackerPlayerHealth.CurrentHealth <= 0f))
             {
                 demon.ClearTarget();
                 demon.ClearAttacker();
@@ -40,7 +52,6 @@ public class DemonMinionBrain : MonoBehaviour
             }
         }
 
-        NPCGoddess npc = demon.TargetNPC;
         // == First priority: chase NPC ==
         if (npc != null && !npc.IsDead && !npc.HasArrived)
         {
@@ -54,7 +65,9 @@ public class DemonMinionBrain : MonoBehaviour
         float nearestSqrDist = float.MaxValue;
         foreach (var p in PlayerMove.AllPlayers)
         {
-            if (p == null || p.CurrentHealth <= 0f) continue;
+            if (p == null) continue;
+            var pHealth = p.GetComponent<PlayerHealth>();
+            if (pHealth == null || pHealth.CurrentHealth <= 0f) continue;
             float d = demon.transform.position.SqrDistanceXZ(p.transform.position);
             if (d < nearestSqrDist && d <= sqrAggro)
             {

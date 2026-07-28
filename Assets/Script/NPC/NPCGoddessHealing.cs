@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 [RequireComponent(typeof(NPCGoddess))]
 public class NPCGoddessHealing : MonoBehaviour
@@ -86,9 +86,11 @@ public class NPCGoddessHealing : MonoBehaviour
 
             foreach (var p in PlayerMove.AllPlayers)
             {
-                if (p == null || p.CurrentHealth <= 0f) continue;
-                if (p.HealthPercent >= playerHealThresholdPercent) continue;
-                if (p.HealthPercent >= 1f) continue;
+                if (p == null) continue;
+                var ph = p.GetComponent<PlayerHealth>();
+                if (ph == null || ph.CurrentHealth <= 0f) continue;
+                if (ph.HealthPercent >= playerHealThresholdPercent) continue;
+                if (ph.HealthPercent >= 1f) continue;
 
                 float dist = transform.position.DistanceXZ(p.transform.position);
                 if (dist < bestDist && dist <= healRange)
@@ -145,11 +147,13 @@ public class NPCGoddessHealing : MonoBehaviour
         // Also heal nearby players
         foreach (var p in PlayerMove.AllPlayers)
         {
-            if (p == null || p.CurrentHealth <= 0f) continue;
+            if (p == null) continue;
+            var ph2 = p.GetComponent<PlayerHealth>();
+            if (ph2 == null || ph2.CurrentHealth <= 0f) continue;
             float dist = transform.position.DistanceXZ(p.transform.position);
-            if (dist <= healRange && p.CurrentHealth < p.EffectiveMaxHealth)
+            if (dist <= healRange && ph2.CurrentHealth < ph2.EffectiveMaxHealth)
             {
-                p.Heal(healAmount);
+                p.GetComponent<Health>()?.Heal(healAmount);
             }
         }
 
@@ -178,11 +182,13 @@ public class NPCGoddessHealing : MonoBehaviour
 
             foreach (var p in PlayerMove.AllPlayers)
             {
-                if (p == null || p.CurrentHealth <= 0f) continue;
+                if (p == null) continue;
+                var ph = p.GetComponent<PlayerHealth>();
+                if (ph == null || ph.CurrentHealth <= 0f) continue;
                 float dist = transform.position.DistanceXZ(p.transform.position);
-                if (dist <= passiveHealRange && p.CurrentHealth < p.EffectiveMaxHealth)
+                if (dist <= passiveHealRange && ph.CurrentHealth < ph.EffectiveMaxHealth)
                 {
-                    p.Heal(passiveHealPerSecond * Time.deltaTime);
+                    p.GetComponent<Health>()?.Heal(passiveHealPerSecond * Time.deltaTime);
                 }
             }
 

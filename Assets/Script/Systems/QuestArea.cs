@@ -148,6 +148,10 @@ public class QuestArea : MonoBehaviour
 
         if (demon != null && demon.IsDead && cachedNpc != null)
         {
+            // If all areas are complete, don't revive ? alive monsters should patrol
+            if (QuestManager.Instance != null && QuestManager.Instance.AllAreasComplete)
+                yield break;
+
             int newLevel = Mathf.Min(monsterLevel + 1, 3);
             demon.Revive(newLevel, cachedNpc);
         }
@@ -162,6 +166,12 @@ public class QuestArea : MonoBehaviour
             if (obj != null) Object.Destroy(obj);
         }
         spawnedMonsters.Clear();
+    }
+
+    /// <summary>Called when all quest areas are complete. Stops revivals; alive monsters keep patrolling.</summary>
+    public void OnAllAreasComplete()
+    {
+        StopAllCoroutines();
     }
 
     // ========================================

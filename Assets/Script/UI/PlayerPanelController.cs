@@ -59,7 +59,9 @@ public class PlayerPanelController
     {
         if (player == null) return;
 
-        statsLabel.text = $"ATK: {player.EffectiveDamage:F0}  Range: {player.EffectiveAttackRange:F0}m";
+        var pStats = player.GetComponent<PlayerHealth>();
+        if (pStats == null) return;
+        statsLabel.text = $"ATK: {pStats.EffectiveDamage:F0}  Range: {pStats.EffectiveAttackRange:F0}m";
         speedLabel.text = $"Speed: {(player.IsSpeedBoosted ? "!!BOOSTED" : "Normal")}";
 
         if (boostIcon != null)

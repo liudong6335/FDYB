@@ -1,39 +1,28 @@
-﻿/*
+﻿/* ============================================================
+ *  TreasureChest  -  宝箱（状态机 + 进度条 + 掉落）
  * ============================================================
- *  TreasureChest  -  宝箱
- * ============================================================
- *
- * 【功能】
- *   游戏中的可交互宝箱。点击后读条开启，开启后获得随机奖励。
- *   读条期间移动会取消开启。
- *   不同等级的宝箱出不同品质的奖励。
- *
- * 【挂载对象】
- *   场景中的宝箱游戏对象（带碰撞体）
- *
- * 【可调节参数】
- *   chestType        - 宝箱类型（木/铜/银/金）
- *   openTime         - 开启读条时间（秒）
- *   interactDistance - 玩家可交互的最大距离
- *   closedVisual     - 关闭状态的视觉效果
- *   openVisual       - 打开状态的视觉效果
- *   highlightEffect  - 读条时的高亮效果
- *
- * 【宝箱类型说明】
- *   Wooden - 普通奖励（药水/金币/普通装备）
- *   Copper - 更好的奖励（含高品质装备和武器宝石）
- *
- * 【操作说明】
- *   - 靠近宝箱，鼠标点击即可开始开启
- *   - 读条期间移动会取消
  */
-using UnityEngine;
-using UnityEngine.UI;
+using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
 public enum ChestOpenState { Idle, Reading, OpeningItems, ItemFlying, Complete }
-
 public enum ChestType { Wooden, Copper, Silver, Gold }
+
+/// <summary>One entry in a chest's loot table. Configured in the Inspector.</summary>
+[System.Serializable]
+public class ChestLootEntry
+{
+    [Tooltip("Relative probability weight (higher = more likely)")]
+    public float weight = 1f;
+    [Tooltip("Inline item data (used when definition is null)")]
+    public GameItem item;
+    [Tooltip("Optional ScriptableObject definition (overrides inline item)")]
+    public GameItemDefinition definition;
+    [Min(1)] public int minCount = 1;
+    [Min(1)] public int maxCount = 1;
+}
+
 
 public class TreasureChest : MonoBehaviour
 {
@@ -44,53 +33,81 @@ public class TreasureChest : MonoBehaviour
     [SerializeField] private float readTime = 3f;
     [SerializeField] private float hitPenalty = 0.8f;
     [SerializeField] private float interactDistance = 2f;
+    [SerializeField] private float destroyDelay = 3f;
+
+    [Header("Progress Bar")]
+    [SerializeField] private ProgressBarUI progressBar;
+
+    [Header("Animation")]
+    [SerializeField] private float openAnimationDelay = 0.3f;
     [SerializeField] private Transform itemSpawnPoint;
     [SerializeField] private GameObject goldVisualPrefab;
     [SerializeField] private float itemFlySpeed = 5f;
-    [SerializeField] private float openAnimationDelay = 0.3f;
+    [SerializeField] private Animator chestAnimator;
+    [SerializeField] private string chestOpenTrigger = "Open";
+    private int chestOpenTriggerHash;
 
+    [Header("Player Animation")]
+    [Tooltip("Animator trigger name on the player for open-chest animation")]
+    [SerializeField] private string playerOpenTriggerName = "Open";
+    private int playerOpenTriggerHash;
+
+
+    [Header("Loot Table")]
+    [Tooltip("Weighted loot entries. If empty, uses built-in defaults for the chest type.")]
+    [SerializeField] private List<ChestLootEntry> lootTable = new List<ChestLootEntry>();
     [Header("Visual")]
     [SerializeField] private GameObject closedVisual;
     [SerializeField] private GameObject openVisual;
     [SerializeField] private GameObject highlightEffect;
 
+    // State
     private bool isOpened;
     private bool isOpening;
     private PlayerMove openingPlayer;
+    private PlayerChestInteraction chestInteraction;
     private InventoryManager cachedInventory;
     private ChestOpenState currentState = ChestOpenState.Idle;
     private float currentReadProgress;
-    private float previousPlayerHealth;
-
-    // Progress bar
-    private GameObject barPanel;
-    private Image fillImage;
-    private readonly Vector3 barOffset = new Vector3(0f, 2.5f, 0f);
-    private readonly Vector2 barSize = new Vector2(80f, 8f);
+    private float previousHealthPercent;
 
     private float sqrInteractDistance;
     private float sqrInteractPadding;
 
-    // Static registry for efficient AI queries (avoids FindObjectsByType)
+    // Health (for hit penalty)
+    private Health playerHealth;
+
     private static readonly List<TreasureChest> allChests = new List<TreasureChest>();
     public static IReadOnlyList<TreasureChest> ActiveChests => allChests;
 
     public ChestType Type { get { return chestType; } set { chestType = value; } }
     public bool IsOpened { get { return isOpened; } }
     public bool IsOpening { get { return isOpening; } }
+    public float InteractDistance { get { return interactDistance; } }
 
     private void Awake()
     {
         allChests.Add(this);
         sqrInteractDistance = interactDistance * interactDistance;
         sqrInteractPadding = (interactDistance + 0.5f) * (interactDistance + 0.5f);
-        BuildProgressBar();
+
+        // Ensure a collider for OnMouseDown() click detection
+        if (GetComponent<Collider>() == null)
+        {
+            var col = gameObject.AddComponent<BoxCollider>();
+            col.isTrigger = false;
+        }
+
+        // Auto-find chest animator
+        if (chestAnimator == null) chestAnimator = GetComponent<Animator>();
+        chestOpenTriggerHash = Animator.StringToHash(chestOpenTrigger);
+        playerOpenTriggerHash = Animator.StringToHash(playerOpenTriggerName);
     }
 
     private void OnDestroy()
     {
         allChests.Remove(this);
-        if (barPanel != null) Destroy(barPanel);
+        UnsubscribePlayerHealth();
     }
 
     private void Start()
@@ -98,19 +115,13 @@ public class TreasureChest : MonoBehaviour
         if (closedVisual != null) closedVisual.SetActive(true);
         if (openVisual != null) openVisual.SetActive(false);
         if (highlightEffect != null) highlightEffect.SetActive(false);
-        if (barPanel != null) barPanel.SetActive(false);
     }
 
     private void Update()
     {
-        if (isOpened || !isOpening || openingPlayer == null) return;
-
-        switch (currentState)
-        {
-            case ChestOpenState.Reading:
-                UpdateReading();
-                break;
-        }
+        if (isOpened) return;
+        if (isOpening && openingPlayer != null && currentState == ChestOpenState.Reading)
+            UpdateReading();
     }
 
     private void OnMouseDown()
@@ -121,9 +132,11 @@ public class TreasureChest : MonoBehaviour
 
     public void TryInteract()
     {
+        if (isOpened || isOpening) return;
+
+        // Find nearest player
         PlayerMove nearest = null;
         float nearestSqrDist = float.MaxValue;
-
         foreach (var p in PlayerMove.AllPlayers)
         {
             if (p == null) continue;
@@ -134,9 +147,19 @@ public class TreasureChest : MonoBehaviour
                 nearest = p;
             }
         }
+        if (nearest == null) return;
 
-        if (nearest != null && nearestSqrDist <= sqrInteractDistance)
+        PlayerChestInteraction interaction = nearest.GetComponent<PlayerChestInteraction>();
+        if (interaction == null) return;
+
+        if (nearestSqrDist <= sqrInteractDistance)
+        {
             StartOpening(nearest);
+        }
+        else
+        {
+            interaction.NavigateTo(this);
+        }
     }
 
     public void StartOpening(PlayerMove player)
@@ -148,136 +171,228 @@ public class TreasureChest : MonoBehaviour
         openingPlayer = player;
         currentState = ChestOpenState.Reading;
         currentReadProgress = 0f;
-        previousPlayerHealth = player.CurrentHealth;
+
+        chestInteraction = player.GetComponent<PlayerChestInteraction>();
+        if (chestInteraction != null)
+            chestInteraction.LockForReading(this);
+
+        SubscribePlayerHealth(player);
+
+        ShowProgressBar(0f);
         if (highlightEffect != null) highlightEffect.SetActive(true);
-        ShowProgressBar();
+
+        player.StopMoving();
+        if (!string.IsNullOrEmpty(playerOpenTriggerName))
+        {
+            var pAnim = player.GetComponent<Animator>();
+            if (pAnim != null) pAnim.SetTrigger(playerOpenTriggerHash);
+        }
     }
 
-    private void CancelOpening()
+    public void CancelInteraction()
     {
+        UnsubscribePlayerHealth();
         isOpening = false;
         openingPlayer = null;
         currentState = ChestOpenState.Idle;
         currentReadProgress = 0f;
+        HideProgressBar();
         if (highlightEffect != null) highlightEffect.SetActive(false);
-        if (barPanel != null) barPanel.SetActive(false);
     }
 
-    private void OpenChest(PlayerMove player)
+    private void OnReadingComplete()
     {
+        currentState = ChestOpenState.OpeningItems;
+
+        if (closedVisual != null) closedVisual.SetActive(false);
+        if (openVisual != null) openVisual.SetActive(true);
+        HideProgressBar();
+
+        if (chestAnimator != null)
+            chestAnimator.SetTrigger(chestOpenTriggerHash);
+
+        if (chestInteraction != null)
+            chestInteraction.Release();
+
+        StartCoroutine(OpeningSequence());
+    }
+
+    private IEnumerator OpeningSequence()
+    {
+        yield return new WaitForSeconds(openAnimationDelay);
+
+        currentState = ChestOpenState.ItemFlying;
+        if (highlightEffect != null) highlightEffect.SetActive(false);
+
+        List<GameItem> loot = GenerateLoot();
+        Vector3 spawnPos = itemSpawnPoint != null
+            ? itemSpawnPoint.position
+            : transform.position + Vector3.up * 1.5f;
+
+        List<GameObject> visuals = new List<GameObject>();
+
+        int totalGold = 0;
+        foreach (var item in loot)
+            if (item.itemType == ItemType.Currency)
+                totalGold += item.goldAmount;
+
+        if (totalGold > 0 && goldVisualPrefab != null && openingPlayer != null)
+        {
+            int coinCount = Mathf.Clamp(totalGold / 10, 1, 10);
+            for (int i = 0; i < coinCount; i++)
+            {
+                Vector3 off = new Vector3(Random.Range(-0.3f, 0.3f), 0.5f, Random.Range(-0.3f, 0.3f));
+                visuals.Add(Instantiate(goldVisualPrefab, spawnPos + off, Random.rotation));
+            }
+
+            float duration = 0.6f;
+            float elapsed = 0f;
+            float speedFactor = Mathf.Max(0.5f, itemFlySpeed * 0.2f);
+            Vector3 target = openingPlayer.transform.position + Vector3.up * 1f;
+
+            while (elapsed < duration * speedFactor)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / (duration * speedFactor));
+                for (int i = 0; i < visuals.Count; i++)
+                {
+                    if (visuals[i] != null)
+                    {
+                        Vector3 start = spawnPos + Vector3.right * i * 0.15f;
+                        Vector3 end = target + Random.insideUnitSphere * 0.3f;
+                        Vector3 pos = Vector3.Lerp(start, end, t);
+                        pos.y += Mathf.Sin(t * Mathf.PI) * 0.8f;
+                        visuals[i].transform.position = pos;
+                        visuals[i].transform.localScale = Vector3.Lerp(Vector3.one * 0.5f, Vector3.one, t);
+                    }
+                }
+                yield return null;
+            }
+        }
+
+        foreach (var v in visuals)
+            if (v != null) Destroy(v);
+
+        UnsubscribePlayerHealth();
         isOpened = true;
         isOpening = false;
         currentState = ChestOpenState.Complete;
-        if (closedVisual != null) closedVisual.SetActive(false);
-        if (openVisual != null) openVisual.SetActive(true);
-        if (highlightEffect != null) highlightEffect.SetActive(false);
-        if (barPanel != null) barPanel.SetActive(false);
 
         if (cachedInventory == null)
             cachedInventory = FindFirstObjectByType<InventoryManager>();
+        foreach (var item in loot)
+            if (cachedInventory != null) cachedInventory.AddItem(item, openingPlayer);
 
-        foreach (var item in GenerateLoot())
-        {
-            if (cachedInventory != null)
-                cachedInventory.AddItem(item, player);
-        }
+        StartCoroutine(DelayedDestroy());
     }
 
     private void UpdateReading()
     {
-        float sqrDist = transform.position.SqrDistanceXZ(openingPlayer.transform.position);
-        if (sqrDist > sqrInteractPadding)
+        if (openingPlayer == null) return;
+
+        // Player died during reading - cancel (matches NPC collection behavior)
+        var pHealth = openingPlayer.GetComponent<Health>();
+        if (pHealth == null || pHealth.IsDead)
         {
-            CancelOpening();
+            CancelInteraction();
             return;
         }
 
-        // Hit detection: track health decrease
-        float currentHealth = openingPlayer.CurrentHealth;
-        if (currentHealth < previousPlayerHealth - 0.01f)
-        {
-            currentReadProgress -= hitPenalty;
-            currentReadProgress = Mathf.Max(0f, currentReadProgress);
-        }
-        previousPlayerHealth = currentHealth;
-
         currentReadProgress += Time.deltaTime;
-        UpdateProgressBar();
+        ShowProgressBar(Mathf.Clamp01(currentReadProgress / readTime));
 
         if (currentReadProgress >= readTime)
-            OpenChest(openingPlayer);
+            OnReadingComplete();
     }
 
-    private void BuildProgressBar()
+    private void ShowProgressBar(float pct)
     {
-        HealthBarCanvas.EnsureSharedCanvas();
-        
-        barPanel = new GameObject("ChestBar_" + gameObject.name, typeof(RectTransform));
-        barPanel.transform.SetParent(HealthBarCanvas.SharedCanvasRect, false);
-        var panelRect = barPanel.GetComponent<RectTransform>();
-        panelRect.sizeDelta = barSize;
-
-        var bg = new GameObject("Bg", typeof(RectTransform), typeof(Image));
-        bg.transform.SetParent(panelRect.transform, false);
-        var bgImage = bg.GetComponent<Image>();
-        bgImage.color = new Color(0.15f, 0.15f, 0.15f, 0.85f);
-        var bgRt = bg.GetComponent<RectTransform>();
-        bgRt.anchorMin = Vector2.zero; bgRt.anchorMax = Vector2.one;
-        bgRt.offsetMin = Vector2.zero; bgRt.offsetMax = Vector2.zero;
-
-        var fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
-        fill.transform.SetParent(bg.transform, false);
-        fillImage = fill.GetComponent<Image>();
-        fillImage.color = Color.red;
-        fillImage.type = Image.Type.Filled;
-        fillImage.fillMethod = Image.FillMethod.Horizontal;
-        fillImage.fillOrigin = 0;
-        fillImage.fillAmount = 0f;
-        var fillRt = fill.GetComponent<RectTransform>();
-        fillRt.anchorMin = Vector2.zero; fillRt.anchorMax = Vector2.one;
-        fillRt.offsetMin = Vector2.zero; fillRt.offsetMax = Vector2.zero;
-
-        barPanel.SetActive(false);
-    }
-
-    private void ShowProgressBar()
-    {
-        if (barPanel != null) barPanel.SetActive(true);
-        if (fillImage != null) fillImage.fillAmount = 0f;
+        if (progressBar != null)
+            progressBar.Show(pct);
     }
 
     private void HideProgressBar()
     {
-        if (barPanel != null) barPanel.SetActive(false);
+        if (progressBar != null)
+            progressBar.Hide();
     }
 
-    private void UpdateProgressBar()
+    private void SubscribePlayerHealth(PlayerMove player)
     {
-        if (fillImage == null || barPanel == null || Camera.main == null) return;
-
-        float pct = Mathf.Clamp01(currentReadProgress / readTime);
-        fillImage.fillAmount = pct;
-
-        if (pct < 0.3f)
-            fillImage.color = Color.Lerp(Color.red, Color.yellow, pct / 0.3f);
-        else if (pct < 0.7f)
-            fillImage.color = Color.Lerp(Color.yellow, Color.green, (pct - 0.3f) / 0.4f);
-        else
-            fillImage.color = Color.Lerp(Color.green, new Color(0.2f, 0.85f, 0.2f), (pct - 0.7f) / 0.3f);
-
-        Vector3 worldPos = transform.position + barOffset;
-        Vector3 screenPos = Camera.main.WorldToScreenPoint(worldPos);
-        if (screenPos.z > 0f)
+        if (player == null) return;
+        var health = player.GetComponent<Health>();
+        if (health != null)
         {
-            Vector2 anchoredPos;
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                HealthBarCanvas.SharedCanvasRect, screenPos, null, out anchoredPos);
-            barPanel.GetComponent<RectTransform>().anchoredPosition = anchoredPos;
+            playerHealth = health;
+            previousHealthPercent = health.HealthPercent;
+            health.onHealthChanged.AddListener(OnPlayerDamaged);
         }
     }
 
+    private void UnsubscribePlayerHealth()
+    {
+        if (playerHealth != null)
+        {
+            playerHealth.onHealthChanged.RemoveListener(OnPlayerDamaged);
+            playerHealth = null;
+        }
+    }
+
+    private void OnPlayerDamaged(float currentPercent)
+    {
+        if (currentPercent < previousHealthPercent - 0.001f)
+        {
+            currentReadProgress -= hitPenalty;
+            currentReadProgress = Mathf.Max(0f, currentReadProgress);
+        }
+        previousHealthPercent = currentPercent;
+    }
+
+    private IEnumerator DelayedDestroy()
+    {
+        yield return new WaitForSeconds(destroyDelay);
+        Destroy(gameObject);
+    }
 
     private List<GameItem> GenerateLoot()
+    {
+        // Use Inspector-configured loot table if available
+        if (lootTable.Count > 0)
+            return RollLootTable();
+        // Fallback: built-in defaults
+        return GenerateDefaultLoot();
+    }
+
+    /// <summary>Roll a weighted random entry from the loot table.</summary>
+    private List<GameItem> RollLootTable()
+    {
+        List<GameItem> items = new List<GameItem>();
+        float totalWeight = 0f;
+        foreach (var entry in lootTable) totalWeight += entry.weight;
+        if (totalWeight <= 0f) return items;
+
+        float roll = Random.Range(0f, totalWeight);
+        float cumulative = 0f;
+        foreach (var entry in lootTable)
+        {
+            cumulative += entry.weight;
+            if (roll <= cumulative)
+            {
+                int count = Random.Range(entry.minCount, entry.maxCount + 1);
+                for (int i = 0; i < count; i++)
+                {
+                    if (entry.definition != null)
+                        items.Add(entry.definition.ToGameItem());
+                    else if (entry.item != null)
+                        items.Add(entry.item.Clone());
+                }
+                break;
+            }
+        }
+        return items;
+    }
+
+    private List<GameItem> GenerateDefaultLoot()
     {
         List<GameItem> items = new List<GameItem>();
         float roll = Random.value;
@@ -331,7 +446,7 @@ public class TreasureChest : MonoBehaviour
         if (Random.value < 0.5f)
         {
             statValue = isQuality ? QualityHP[slotIndex] : NormalHP[slotIndex];
-            statDesc = "生命鍊?" + statValue + "HP";
+            statDesc = "生命+" + statValue + "HP";
         }
         else
         {

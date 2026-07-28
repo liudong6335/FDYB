@@ -366,7 +366,7 @@ public class NPCGoddessMovement : MonoBehaviour
                     foreach (var player in PlayerMove.AllPlayers)
                     {
                         if (player == null || player.IsDead) continue;
-                        if (player.HealthPercent < rescueHealthThreshold)
+                        var pmHp = player.GetComponent<Health>(); if (pmHp != null && pmHp.HealthPercent < rescueHealthThreshold)
                         {
                             float distToPlayer = transform.position.DistanceXZ(player.transform.position);
                             if (distToPlayer < rescuePlayerDistance)
@@ -413,7 +413,7 @@ public class NPCGoddessMovement : MonoBehaviour
                 foreach (var player in PlayerMove.AllPlayers)
                 {
                     if (player == null || player.IsDead) continue;
-                    if (player.HealthPercent < rescueHealthThreshold + 0.1f)
+                    var pmHp2 = player.GetComponent<Health>(); if (pmHp2 != null && pmHp2.HealthPercent < rescueHealthThreshold + 0.1f)
                     {
                         playersSafe = false;
                         break;

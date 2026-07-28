@@ -20,14 +20,6 @@ public class DemonMinionBrain : MonoBehaviour
     {
         NPCGoddess npc = demon.TargetNPC;
 
-        // If NPC has arrived, monster loses its attack target → auto patrol, no new targets
-        if (npc != null && npc.HasArrived)
-        {
-            demon.ClearTarget();
-            demon.ClearAttacker();
-            return;
-        }
-
         // == First priority: revenge the attacker ==
         Transform attacker = demon.AttackerTransform;
         if (attacker != null)

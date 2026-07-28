@@ -192,6 +192,12 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
             animator.Play(0, 0, 0f);
             animator.Update(0f);
         }
+        // Fix: Animator.Rebind() resets SkinnedMeshRenderer bounds to (0,0,0),
+        // causing frustum culling to hide the model when camera is far away.
+        // Setting updateWhenOffscreen prevents this intermittent invisibility.
+        var skinnedRenderers = GetComponentsInChildren<SkinnedMeshRenderer>(true);
+        foreach (var smr in skinnedRenderers)
+            if (smr != null) smr.updateWhenOffscreen = true;
         if (healthBar == null) healthBar = GetComponentInChildren<UGUIFloatingHealthBar>();
         if (healthBar != null) healthBar.SetProvider(this);
 
@@ -483,6 +489,11 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
         else if (targetNPC != null && !targetNPC.IsDead && !targetNPC.HasArrived)
         {
             moving = transform.position.SqrDistanceXZ(targetNPC.transform.position) > sqrAttackRange;
+        }
+        else if (targetNPC != null && !targetNPC.IsDead && targetNPC.HasArrived)
+        {
+            // Patrol mode: moving when walking toward a patrol waypoint
+            moving = !isWaitingAtPatrol && Vector3.Distance(transform.position, patrolTarget) > 1f;
         }
         animator.SetBool(isMovingHash, moving);
     }

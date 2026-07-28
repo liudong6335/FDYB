@@ -29,7 +29,7 @@
 using UnityEngine;
 
 [RequireComponent(typeof(Health))]
-public class PlayerHealth : MonoBehaviour, IHealthProvider
+public class PlayerHealth : MonoBehaviour, IHealthProvider, IDamageable
 {
     [Header("Stats")]
     [SerializeField] private float maxHealth = 1000f;
@@ -45,6 +45,8 @@ public class PlayerHealth : MonoBehaviour, IHealthProvider
     private Animator animator;
 
     private Health health;
+
+    public bool IsDead { get { return health == null || health.CurrentHealth <= 0f; } }
 
     public float MaxHealth { get { return health != null ? health.MaxHealth : maxHealth; } }
     public float CurrentHealth { get { return health != null ? health.CurrentHealth : 0f; } }
@@ -81,6 +83,11 @@ public class PlayerHealth : MonoBehaviour, IHealthProvider
     {
         if (dmg > 0 && animator != null) { animator.ResetTrigger(hitParamHash); animator.SetTrigger(hitParamHash); }
         if (health != null) health.TakeDamage(dmg);
+    }
+
+    public void Heal(float amount)
+    {
+        if (health != null) health.Heal(amount);
     }
 
     public void RefreshStats()

@@ -46,6 +46,7 @@
  *   GetEntryPosition()     - 获取 NPC 进入区域时的目标位置
  */
 using UnityEngine;
+using UnityEngine.AI;
 using System.Collections.Generic;
 
 
@@ -123,6 +124,8 @@ public class QuestArea : MonoBehaviour
     {
         if (monsterPrefab == null) return;
 
+        cachedNpc = npc;
+
         for (int i = 0; i < monsterCount; i++)
         {
             Vector3 pos = GetRandomSpawnPoint();
@@ -132,8 +135,12 @@ public class QuestArea : MonoBehaviour
             spawnedMonsters.Add(obj);
 
             DemonMinion demon = obj.GetComponent<DemonMinion>();
-            if (demon != null && demon.IsDormant)
-                demon.Activate(monsterLevel, npc);
+            if (demon != null)
+            {
+                if (demon.IsDormant)
+                    demon.Activate(monsterLevel, npc);
+                demon.OnDeath += HandleDemonDeath;
+            }
         }
     }
 
@@ -163,7 +170,12 @@ public class QuestArea : MonoBehaviour
         StopAllCoroutines();
         foreach (var obj in spawnedMonsters)
         {
-            if (obj != null) Object.Destroy(obj);
+            if (obj != null)
+            {
+                var demon = obj.GetComponent<DemonMinion>();
+                if (demon != null) demon.OnDeath -= HandleDemonDeath;
+                Object.Destroy(obj);
+            }
         }
         spawnedMonsters.Clear();
     }
@@ -189,17 +201,16 @@ public class QuestArea : MonoBehaviour
     /// <summary>Get a random spawn point position within the area.</summary>
     public Vector3 GetRandomSpawnPoint()
     {
-        if (spawnPoints.Count == 0)
+        if (spawnPoints.Count > 0)
         {
-            // Fallback: random point within radius
-            Vector2 offset = Random.insideUnitCircle * radius * 0.6f;
-            lastUsedSpawnPos = transform.position + new Vector3(offset.x, 0f, offset.y);
+            int index = Random.Range(0, spawnPoints.Count);
+            Transform selected = spawnPoints[index];
+            Vector3 candidate = selected != null ? selected.position : transform.position;
+            lastUsedSpawnPos = SpawnPositionValidator.GetValidPosition(candidate, 0.5f);
             return lastUsedSpawnPos;
         }
 
-        int index = Random.Range(0, spawnPoints.Count);
-        Transform selected = spawnPoints[index];
-        lastUsedSpawnPos = selected != null ? selected.position : transform.position;
+        lastUsedSpawnPos = SpawnPositionValidator.GetValidPosition(transform.position, radius * 0.6f);
         return lastUsedSpawnPos;
     }
 

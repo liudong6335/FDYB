@@ -37,6 +37,7 @@ public class QuestManager : MonoBehaviour
     private int currentAreaIndex;
     private bool allAreasComplete;
     private GameObject currentItemInstance;
+    private bool itemSpawned;
     private Vector3 currentItemPosition;
     private static QuestManager instance;
 
@@ -112,6 +113,7 @@ public class QuestManager : MonoBehaviour
     {
         var area = CurrentArea;
         if (area == null) return;
+        if (area.IsCompleted) return;
 
         area.IsCompleted = true;
         OnAreaComplete?.Invoke(area);
@@ -276,11 +278,7 @@ public class QuestManager : MonoBehaviour
 
             for (int i = 0; i < count; i++)
             {
-                Vector3 pos = center + new Vector3(
-                    Random.Range(-radius, radius),
-                    0f,
-                    Random.Range(-radius, radius)
-                );
+                Vector3 pos = SpawnPositionValidator.GetValidPosition(center, radius);
                 GameObject chestObj = Instantiate(drop.chestPrefab, pos, Quaternion.identity);
 
                 // Add BoxCollider for click interaction if missing
@@ -306,6 +304,7 @@ public class QuestManager : MonoBehaviour
         QuestArea area = CurrentArea;
         if (area == null) return;
 
+        itemSpawned = true;
         currentItemPosition = area.GetRandomSpawnPoint();
         currentItemInstance = Instantiate(questItemPrefab, currentItemPosition, Quaternion.identity);
         currentItemInstance.transform.localScale = Vector3.one * 1.5f;
@@ -320,11 +319,10 @@ public class QuestManager : MonoBehaviour
     /// <summary>Destroy the current quest item visual.</summary>
     private void DestroyCurrentAreaItem()
     {
-        if (currentItemInstance != null)
-        {
-            Destroy(currentItemInstance);
-            currentItemInstance = null;
-        }
+        if (currentItemInstance == null) return;
+        Destroy(currentItemInstance);
+        currentItemInstance = null;
+        itemSpawned = false;
     }
 
     /// <summary>Get the current quest item's world position.</summary>
@@ -333,7 +331,7 @@ public class QuestManager : MonoBehaviour
         Debug.Log("[QuestManager] GetCurrentItemPosition: instance=" + (currentItemInstance != null) + " pos=" + currentItemPosition);
         if (currentItemInstance != null)
             return currentItemInstance.transform.position;
-        if (currentItemPosition != Vector3.zero)
+        if (itemSpawned)
             return currentItemPosition;
         return null;
     }

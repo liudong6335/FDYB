@@ -100,6 +100,7 @@ public class TreasureChest : MonoBehaviour
 
         // Auto-find chest animator
         if (chestAnimator == null) chestAnimator = GetComponent<Animator>();
+        if (progressBar == null) progressBar = GetComponentInChildren<ProgressBarUI>();
         chestOpenTriggerHash = Animator.StringToHash(chestOpenTrigger);
         playerOpenTriggerHash = Animator.StringToHash(playerOpenTriggerName);
     }

@@ -40,13 +40,13 @@ public class ProgressBarUI : MonoBehaviour
     private void BuildBar()
     {
         // Destroy lingering panel from previous scene load
-        var existing = HealthBarCanvas.SharedCanvasRect.Find("PB_" + gameObject.name);
+        var existing = HealthBarCanvas.SharedCanvasRect.Find("PB_" + gameObject.GetInstanceID());
         if (existing != null) DestroyImmediate(existing.gameObject);
 
         float totalW = barSize.x + borderThick * 2f;
         float totalH = barSize.y + borderThick * 2f;
 
-        var panel = new GameObject("PB_" + gameObject.name, typeof(RectTransform));
+        var panel = new GameObject("PB_" + gameObject.GetInstanceID(), typeof(RectTransform));
         panel.transform.SetParent(HealthBarCanvas.SharedCanvasRect, false);
         panelRect = panel.GetComponent<RectTransform>();
         panelRect.sizeDelta = new Vector2(totalW, totalH);
@@ -150,7 +150,7 @@ public class ProgressBarUI : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (panelRect != null)
+        if (panelRect != null && panelRect.gameObject != null)
             Destroy(panelRect.gameObject);
     }
 }

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.Events;
 
 public enum GamePhase { Menu, Escort, Exploration, BossBattle, Victory, GameOver }
@@ -66,6 +66,10 @@ public class EscortPhaseController : MonoBehaviour
 
     public void StartEscortPhase()
     {
+        // Reset global loot budget for a new game
+        if (LootBudgetManager.Instance != null)
+            LootBudgetManager.Instance.Reset();
+
         gameTimer = 0f;
         phase1Complete = false;
 

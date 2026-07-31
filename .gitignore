@@ -48,3 +48,9 @@ crashlytics-build.properties
 
 # Unity Auto Recovery
 _Recovery/
+
+# Unity auto-recovery
+Assets/_Reco*/
+
+# Maya editor cache
+.mayaSwatches/

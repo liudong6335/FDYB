@@ -1,8 +1,8 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 /// <summary>
 /// ScriptableObject asset for item templates.
-/// Create instances via Assets → Create → Game/Item Definition.
+/// Create instances via Assets 鈫?Create 鈫?Game/Item Definition.
 /// </summary>
 [CreateAssetMenu(menuName = "Game/Item Definition")]
 public class GameItemDefinition : ScriptableObject
@@ -26,6 +26,20 @@ public class GameItemDefinition : ScriptableObject
 
     [Header("Currency")]
     public int goldAmount;
+
+    [Header("UI & Visual")]
+    [Tooltip("背包/商城展示用图标")]
+    public Sprite icon;
+    [Tooltip("场景掉落 3D 模型预制体（null = 不掉落在地面）")]
+    public GameObject dropPrefab;
+    [Tooltip("玩家死亡时该物品是否从背包掉出")]
+    public bool dropOnDeath;
+    [Tooltip("商城售价（0 = 不出售）")]
+    public int shopPrice;
+    [TextArea]
+    [Tooltip("鼠标悬浮提示文本")]
+    public string tooltip;
+
     /// <summary>Convert this definition to a runtime GameItem instance.</summary>
     public GameItem ToGameItem()
     {

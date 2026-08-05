@@ -77,6 +77,45 @@ public class PlayerHealth : MonoBehaviour, IHealthProvider, IDamageable
     {
         if (animator != null) { animator.ResetTrigger(deathParamHash); animator.SetTrigger(deathParamHash); }
         OnDeath?.Invoke();
+        DropItemsOnDeath();
+    }
+
+    /// <summary>玩家死亡时，按物品配置把部分背包物品掉落到地面。</summary>
+    private void DropItemsOnDeath()
+    {
+        var player = GetComponent<PlayerMove>();
+        if (player == null) return;
+
+        var inv = InventoryManager.Instance;
+        if (inv == null) return;
+        var backpack = inv.GetPlayerBackpack(player);
+        if (backpack == null) return;
+
+        // 倒序遍历，避免 RemoveAt 导致索引错乱
+        for (int i = backpack.Count - 1; i >= 0; i--)
+        {
+            var item = backpack[i];
+            if (item.definition == null) continue;
+            if (!item.definition.dropOnDeath) continue;
+
+            if (Random.value >= item.definition.deathDropChance) continue;
+
+            // 从背包移除
+            backpack.RemoveAt(i);
+
+            // 生成地面掉落物（纯地面模式，玩家靠近自动拾取）
+            if (item.definition.dropPrefab != null)
+            {
+                Vector3 pos = transform.position + Random.insideUnitSphere * 1f;
+                pos.y = transform.position.y + 0.5f;
+                GameObject go = Instantiate(item.definition.dropPrefab, pos, Quaternion.identity);
+                DroppedItem dropped = go.GetComponent<DroppedItem>();
+                if (dropped == null) dropped = go.AddComponent<DroppedItem>();
+                dropped.Launch(item, null, float.MaxValue);
+            }
+
+            inv.OnInventoryChanged?.Invoke();
+        }
     }
 
     public void TakeDamage(float dmg)

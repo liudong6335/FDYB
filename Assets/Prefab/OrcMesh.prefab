@@ -241,6 +241,7 @@ GameObject:
   - component: {fileID: 9122824560363231515}
   - component: {fileID: 7103891085077749416}
   - component: {fileID: 7019213003075300414}
+  - component: {fileID: 4464449591854516046}
   m_Layer: 8
   m_Name: OrcMesh
   m_TagString: Untagged
@@ -375,7 +376,8 @@ MonoBehaviour:
   attackLockTime: 0.6
   aggroRange: 10
   disengageDistance: 10
-  altarDeathDelay: 30
+  targetUpdateInterval: 2
+  exactTrackingRange: 15
   patrolRadius: 8
   patrolWaitTime: 3
   animator: {fileID: 0}
@@ -384,7 +386,6 @@ MonoBehaviour:
   deathParam: Death
   hitParam: Hit
   healthBar: {fileID: 0}
-  useBehaviourAI: 0
 --- !u!114 &9122824560363231515
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -459,6 +460,34 @@ NavMeshAgent:
   m_BaseOffset: 0
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
+--- !u!114 &4464449591854516046
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1153785637378582645}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6576791f27ab1504b8edc6e4d78cd79b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MonsterDrop
+  dropEntries:
+  - itemDef: {fileID: 11400000, guid: ff29a5c5e8b94734696b22d40c2494c9, type: 2}
+    weight: 20
+  - itemDef: {fileID: 11400000, guid: 97856a24f1e025a40ac75285ee661418, type: 2}
+    weight: 10
+  - itemDef: {fileID: 11400000, guid: f397edc561a433a4bbbe993a8ba0672d, type: 2}
+    weight: 8
+  - itemDef: {fileID: 11400000, guid: 0a1146376beac544384805782417c672, type: 2}
+    weight: 8
+  - itemDef: {fileID: 11400000, guid: 5406ee3526c452b49808456bc6a03c8c, type: 2}
+    weight: 5
+  - itemDef: {fileID: 11400000, guid: e68dd518fef6d3b48adc28fcb0144487, type: 2}
+    weight: 3
+  - itemDef: {fileID: 11400000, guid: 69654c6f0792a8240bcd517b2652a547, type: 2}
+    weight: 2
+  dropGroundDelay: 0.4
 --- !u!1 &1333958524981230898
 GameObject:
   m_ObjectHideFlags: 0

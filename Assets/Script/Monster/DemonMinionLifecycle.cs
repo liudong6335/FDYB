@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections;
-using System.Collections.Generic;
 
 /// <summary>
 /// Manages dormant/activate/revive/death lifecycle for DemonMinion.
@@ -17,6 +16,9 @@ public class DemonMinionLifecycle : MonoBehaviour
 
     private Renderer[] cachedRenderers;
     private bool isDormant;
+
+    /// <summary>怪物尸体隐藏后触发（用于掉落物延迟飞行）。</summary>
+    public System.Action OnBodyHidden;
 
     public bool IsDormant { get { return isDormant; } }
     private static readonly int IsMovingHash = Animator.StringToHash("IsMoving");
@@ -77,7 +79,6 @@ public class DemonMinionLifecycle : MonoBehaviour
 
     public void Revive(int newLevel, NPCGoddess npc)
     {
-
         demon.NotifyAlive();
 
         ToggleAllComponents(true);
@@ -98,8 +99,6 @@ public class DemonMinionLifecycle : MonoBehaviour
     // ============================================
     // Internal
     // ============================================
-
-
 
     private void ToggleAllComponents(bool enable)
     {
@@ -137,5 +136,7 @@ public class DemonMinionLifecycle : MonoBehaviour
 
         if (animator != null) animator.enabled = false;
         if (col != null) col.enabled = false;
+
+        OnBodyHidden?.Invoke();
     }
 }

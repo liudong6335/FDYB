@@ -150,14 +150,36 @@ MonoBehaviour:
   hitPenalty: 0.8
   interactDistance: 2
   destroyDelay: 3
-  progressBar: {fileID: 7416139103110782285}
   openAnimationDelay: 0.3
+  progressBar: {fileID: 7416139103110782285}
   itemSpawnPoint: {fileID: 0}
   goldVisualPrefab: {fileID: 0}
   itemFlySpeed: 5
   chestAnimator: {fileID: 920082945397427216}
   chestOpenTrigger: Open
+  chestOpenStateName: open
   playerOpenTriggerName: Open
+  lootTable:
+  - itemDef: {fileID: 11400000, guid: ff29a5c5e8b94734696b22d40c2494c9, type: 2}
+    weight: 20
+  - itemDef: {fileID: 11400000, guid: 97856a24f1e025a40ac75285ee661418, type: 2}
+    weight: 10
+  - itemDef: {fileID: 11400000, guid: f397edc561a433a4bbbe993a8ba0672d, type: 2}
+    weight: 10
+  - itemDef: {fileID: 11400000, guid: 0a1146376beac544384805782417c672, type: 2}
+    weight: 10
+  - itemDef: {fileID: 11400000, guid: 5406ee3526c452b49808456bc6a03c8c, type: 2}
+    weight: 8
+  - itemDef: {fileID: 11400000, guid: 8b10555c1c6e22f4282a6581de2b2a91, type: 2}
+    weight: 8
+  - itemDef: {fileID: 11400000, guid: e68dd518fef6d3b48adc28fcb0144487, type: 2}
+    weight: 5
+  - itemDef: {fileID: 11400000, guid: 2484cfe9ad23331498d0ccf73f7dde14, type: 2}
+    weight: 4
+  - itemDef: {fileID: 11400000, guid: 69654c6f0792a8240bcd517b2652a547, type: 2}
+    weight: 3
+  - itemDef: {fileID: 11400000, guid: 76b53f42a54f19e478a29a09063417fb, type: 2}
+    weight: 15
   closedVisual: {fileID: 0}
   openVisual: {fileID: 0}
   highlightEffect: {fileID: 0}

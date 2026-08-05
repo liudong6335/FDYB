@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 /// <summary>
 /// ScriptableObject asset for item templates.
@@ -34,6 +34,8 @@ public class GameItemDefinition : ScriptableObject
     public GameObject dropPrefab;
     [Tooltip("玩家死亡时该物品是否从背包掉出")]
     public bool dropOnDeath;
+    [Tooltip("死亡掉落概率（0~1），默认 0 = 不掉")]
+    [Range(0f, 1f)] public float deathDropChance;
     [Tooltip("商城售价（0 = 不出售）")]
     public int shopPrice;
     [TextArea]

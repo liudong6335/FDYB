@@ -1,4 +1,4 @@
-﻿/*
+/*
  * ============================================================
  *  InventoryManager  -  鑳屽寘/瑁呭绠＄悊鍣?
  * ============================================================
@@ -128,7 +128,22 @@ public class InventoryManager : MonoBehaviour
     [SerializeField] private PlayerMove player2;
 
     private static InventoryManager instance;
-    public static InventoryManager Instance { get { return instance; } }
+    public static InventoryManager Instance
+    {
+        get
+        {
+            if (instance == null)
+            {
+                instance = FindFirstObjectByType<InventoryManager>();
+                if (instance == null && Application.isPlaying)
+                {
+                    var go = new GameObject("InventoryManager");
+                    instance = go.AddComponent<InventoryManager>();
+                }
+            }
+            return instance;
+        }
+    }
 
     public System.Action OnInventoryChanged;
 

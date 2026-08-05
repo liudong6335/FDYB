@@ -13,7 +13,7 @@ public enum DropItemPhase
 /// <summary>
 /// 场景掉落物组件，挂在 dropPrefab 上。
 /// 管理从生成到进入背包的完整生命周期。
-/// 支持两种模式：自动飞向玩家（宝箱/怪物）和地面拾取（背包满回落）。
+/// 支持自动飞向玩家（宝箱/怪物）和地面拾取（背包满回落）。
 /// </summary>
 public class DroppedItem : MonoBehaviour
 {
@@ -25,8 +25,10 @@ public class DroppedItem : MonoBehaviour
     private DropItemPhase phase;
     private bool isPickupLocked;
 
+    [SerializeField, Tooltip("玩家靠近到该距离自动拾取（地面模式）")]
+    private float pickupRange = 4f;
+
     private const float FlyDuration = 0.6f;
-    private const float PickupRange = 2f;
     private const int DefaultMaxSlots = 20;
 
     // ========================================
@@ -43,7 +45,16 @@ public class DroppedItem : MonoBehaviour
         isPickupLocked = false;
 
         phase = groundDelay > 0f ? DropItemPhase.Ground : DropItemPhase.Flying;
-        transform.localScale = Vector3.one * (phase == DropItemPhase.Ground ? 0.4f : 0.3f);
+    }
+
+    /// <summary>外部触发：从地面阶段切换到飞行阶段（用于等怪物尸体消失后再飞）。</summary>
+    public void BeginFlight(PlayerMove target)
+    {
+        if (target == null) return;
+        flyTarget = target;
+        phase = DropItemPhase.Flying;
+        timer = 0f;
+        spawnPos = transform.position;
     }
 
     // ========================================
@@ -55,9 +66,14 @@ public class DroppedItem : MonoBehaviour
         if (phase == DropItemPhase.Done) return;
 
         if (phase == DropItemPhase.Ground)
+        {
             UpdateGroundPhase();
+            TryAutoPickup();
+        }
         else if (phase == DropItemPhase.Flying)
+        {
             UpdateFlyingPhase();
+        }
     }
 
     private void OnDestroy()
@@ -105,7 +121,6 @@ public class DroppedItem : MonoBehaviour
         transform.position = basePos + Vector3.up * arcHeight;
 
         transform.Rotate(0f, 360f * Time.deltaTime, 0f);
-        transform.localScale = Vector3.Lerp(Vector3.one * 0.3f, Vector3.one, t);
 
         if (t >= 1f)
             OnArrived();
@@ -131,7 +146,6 @@ public class DroppedItem : MonoBehaviour
             timer = 0f;
             groundDelay = float.MaxValue;
             spawnPos = transform.position;
-            transform.localScale = Vector3.one * 0.4f;
         }
     }
 
@@ -175,7 +189,7 @@ public class DroppedItem : MonoBehaviour
 
         if (nearest == null) return;
 
-        float sqrRange = PickupRange * PickupRange;
+        float sqrRange = pickupRange * pickupRange;
         if (nearestSqr <= sqrRange)
         {
             if (isPickupLocked || itemData == null) return;
@@ -196,6 +210,33 @@ public class DroppedItem : MonoBehaviour
         else
         {
             nearest.SetMoveDestination(transform.position);
+        }
+    }
+
+    // ========================================
+    // Auto Pickup (地面模式：玩家靠近自动拾取)
+    // ========================================
+
+    private void TryAutoPickup()
+    {
+        if (isPickupLocked || itemData == null) return;
+        if (InventoryManager.Instance == null) return;
+        // 有飞行目标的物品（如怪物掉落等待起飞）不自动拾取
+        if (flyTarget != null) return;
+
+        foreach (var p in PlayerMove.AllPlayers)
+        {
+            if (p == null || p.IsDead) continue;
+            if (transform.position.SqrDistanceXZ(p.transform.position) > pickupRange * pickupRange)
+                continue;
+
+            var backpack = InventoryManager.Instance.GetPlayerBackpack(p);
+            if (backpack == null) continue;
+            if (backpack.Count >= DefaultMaxSlots) continue;
+
+            InventoryManager.Instance.AddItem(itemData, p);
+            Destroy(gameObject);
+            return;
         }
     }
 }

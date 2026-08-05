@@ -9,7 +9,9 @@ using System.Collections.Generic;
 public class BudgetEntry
 {
     public GameItemDefinition itemDef;
+    [Tooltip("全图最多出几件；勾选无限则不受总量限制")]
     public int maxCount = 10;
+    public bool unlimited;
 }
 
 /// <summary>
@@ -26,6 +28,7 @@ public class DropEntry
 /// <summary>
 /// LootBudgetManager - 全局掉落预算系统。
 /// 控制全图物品产出总量，所有掉落来源统一经过此处查询和扣减。
+/// unlimited=true 的物品不受预算限制（如药水、金币）。
 /// </summary>
 public class LootBudgetManager : MonoBehaviour
 {
@@ -65,8 +68,17 @@ public class LootBudgetManager : MonoBehaviour
             if (entry == null || entry.itemDef == null) continue;
             string id = entry.itemDef.itemId;
             if (string.IsNullOrEmpty(id)) continue;
-            remaining[id] = entry.maxCount;
-            maxCounts[id] = entry.maxCount;
+
+            if (entry.unlimited)
+            {
+                remaining[id] = int.MaxValue;
+                maxCounts[id] = int.MaxValue;
+            }
+            else
+            {
+                remaining[id] = entry.maxCount;
+                maxCounts[id] = entry.maxCount;
+            }
         }
     }
 
@@ -78,7 +90,8 @@ public class LootBudgetManager : MonoBehaviour
     public bool TryConsume(string itemId)
     {
         if (!CanDrop(itemId)) return false;
-        remaining[itemId]--;
+        if (remaining[itemId] != int.MaxValue)
+            remaining[itemId]--;
         return true;
     }
 

@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
  *  TreasureChest  -  宝箱（状态机 + 进度条 + 掉落）
  * ============================================================
  */
@@ -8,21 +8,6 @@ using UnityEngine;
 
 public enum ChestOpenState { Idle, Reading, OpeningItems, ItemFlying, Complete }
 public enum ChestType { Wooden, Copper, Silver, Gold }
-
-/// <summary>One entry in a chest's loot table. Configured in the Inspector.</summary>
-[System.Serializable]
-public class ChestLootEntry
-{
-    [Tooltip("Relative probability weight (higher = more likely)")]
-    public float weight = 1f;
-    [Tooltip("Inline item data (used when definition is null)")]
-    public GameItem item;
-    [Tooltip("Optional ScriptableObject definition (overrides inline item)")]
-    public GameItemDefinition definition;
-    [Min(1)] public int minCount = 1;
-    [Min(1)] public int maxCount = 1;
-}
-
 
 public class TreasureChest : MonoBehaviour
 {
@@ -34,17 +19,24 @@ public class TreasureChest : MonoBehaviour
     [SerializeField] private float hitPenalty = 0.8f;
     [SerializeField] private float interactDistance = 2f;
     [SerializeField] private float destroyDelay = 3f;
+    [Tooltip("无 Animator 时的兜底等待时长")]
+    [SerializeField] private float openAnimationDelay = 0.3f;
 
     [Header("Progress Bar")]
     [SerializeField] private ProgressBarUI progressBar;
 
     [Header("Animation")]
-    [SerializeField] private float openAnimationDelay = 0.3f;
     [SerializeField] private Transform itemSpawnPoint;
     [SerializeField] private GameObject goldVisualPrefab;
+    [Tooltip("物品没有专属 3D 模型时使用的通用掉落物预制体")]
+    [SerializeField] private GameObject defaultDropPrefab;
+    [Tooltip("预算耗尽时兜底掉落的物品（必出物品）")]
+    [SerializeField] private GameItemDefinition fallbackGold;
     [SerializeField] private float itemFlySpeed = 5f;
     [SerializeField] private Animator chestAnimator;
     [SerializeField] private string chestOpenTrigger = "Open";
+    [Tooltip("Animator 中开箱状态名，物品会等这个状态播完才飞出")]
+    [SerializeField] private string chestOpenStateName = "open";
     private int chestOpenTriggerHash;
 
     [Header("Player Animation")]
@@ -52,10 +44,10 @@ public class TreasureChest : MonoBehaviour
     [SerializeField] private string playerOpenTriggerName = "Open";
     private int playerOpenTriggerHash;
 
-
     [Header("Loot Table")]
-    [Tooltip("Weighted loot entries. If empty, uses built-in defaults for the chest type.")]
-    [SerializeField] private List<ChestLootEntry> lootTable = new List<ChestLootEntry>();
+    [Tooltip("Weighted loot entries (itemDef + weight). DropEntry 定义在 LootBudgetManager.cs。")]
+    [SerializeField] private List<DropEntry> lootTable = new List<DropEntry>();
+
     [Header("Visual")]
     [SerializeField] private GameObject closedVisual;
     [SerializeField] private GameObject openVisual;
@@ -220,71 +212,138 @@ public class TreasureChest : MonoBehaviour
 
     private IEnumerator OpeningSequence()
     {
-        yield return new WaitForSeconds(openAnimationDelay);
+        // 等开箱动画播放结束，物品才开始飞出
+        yield return WaitForOpenAnimation();
 
         currentState = ChestOpenState.ItemFlying;
         if (highlightEffect != null) highlightEffect.SetActive(false);
 
-        List<GameItem> loot = GenerateLoot();
+        // 从全局预算中抽取一件物品（预算耗尽时返回 null）
+        GameItem loot = LootBudgetManager.Instance != null
+            ? LootBudgetManager.Instance.PickOne(lootTable)
+            : null;
+
+        // 兜底：必出物品。掉落表未配置或预算耗尽时默认给金币。
+        if (loot == null)
+        {
+            loot = fallbackGold != null
+                ? fallbackGold.ToGameItem()
+                : new GameItem { itemType = ItemType.Currency, itemId = "gold", itemName = "金币", goldAmount = 50 };
+        }
+
         Vector3 spawnPos = itemSpawnPoint != null
             ? itemSpawnPoint.position
             : transform.position + Vector3.up * 1.5f;
 
-        List<GameObject> visuals = new List<GameObject>();
-
-        int totalGold = 0;
-        foreach (var item in loot)
-            if (item.itemType == ItemType.Currency)
-                totalGold += item.goldAmount;
-
-        if (totalGold > 0 && goldVisualPrefab != null && openingPlayer != null)
+        // 金币视觉：仅当金币没有 3D dropPrefab 时使用旧的金币飞行特效
+        if (loot != null && loot.itemType == ItemType.Currency
+            && (loot.definition == null || loot.definition.dropPrefab == null)
+            && goldVisualPrefab != null && openingPlayer != null)
         {
-            int coinCount = Mathf.Clamp(totalGold / 10, 1, 10);
-            for (int i = 0; i < coinCount; i++)
-            {
-                Vector3 off = new Vector3(Random.Range(-0.3f, 0.3f), 0.5f, Random.Range(-0.3f, 0.3f));
-                visuals.Add(Instantiate(goldVisualPrefab, spawnPos + off, Random.rotation));
-            }
-
-            float duration = 0.6f;
-            float elapsed = 0f;
-            float speedFactor = Mathf.Max(0.5f, itemFlySpeed * 0.2f);
-            Vector3 target = openingPlayer.transform.position + Vector3.up * 1f;
-
-            while (elapsed < duration * speedFactor)
-            {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / (duration * speedFactor));
-                for (int i = 0; i < visuals.Count; i++)
-                {
-                    if (visuals[i] != null)
-                    {
-                        Vector3 start = spawnPos + Vector3.right * i * 0.15f;
-                        Vector3 end = target + Random.insideUnitSphere * 0.3f;
-                        Vector3 pos = Vector3.Lerp(start, end, t);
-                        pos.y += Mathf.Sin(t * Mathf.PI) * 0.8f;
-                        visuals[i].transform.position = pos;
-                        visuals[i].transform.localScale = Vector3.Lerp(Vector3.one * 0.5f, Vector3.one, t);
-                    }
-                }
-                yield return null;
-            }
+            yield return StartCoroutine(FlyGoldVisual(spawnPos, loot.goldAmount));
         }
-
-        foreach (var v in visuals)
-            if (v != null) Destroy(v);
 
         UnsubscribePlayerHealth();
         isOpened = true;
         isOpening = false;
         currentState = ChestOpenState.Complete;
 
-        if (cachedInventory == null)
-            cachedInventory = FindFirstObjectByType<InventoryManager>();
-        foreach (var item in loot)
-            if (cachedInventory != null) cachedInventory.AddItem(item, openingPlayer);
+        // 生成掉落物：优先专属模型，其次通用掉落物模型，都无则直接进背包
+        GameObject dropPrefab = loot != null && loot.definition != null && loot.definition.dropPrefab != null
+            ? loot.definition.dropPrefab
+            : defaultDropPrefab;
+
+        if (loot != null && openingPlayer != null && dropPrefab != null)
+        {
+            GameObject go = Instantiate(dropPrefab, spawnPos, Quaternion.identity);
+            DroppedItem dropped = go.GetComponent<DroppedItem>();
+            if (dropped == null) dropped = go.AddComponent<DroppedItem>();
+            dropped.Launch(loot, openingPlayer, 0f);
+        }
+        else if (loot != null)
+        {
+            if (cachedInventory == null)
+                cachedInventory = FindFirstObjectByType<InventoryManager>();
+            if (cachedInventory != null)
+                cachedInventory.AddItem(loot, openingPlayer);
+        }
 
         StartCoroutine(DelayedDestroy());
+    }
+
+    /// <summary>等待宝箱 open 动画播放结束；无 Animator 时按 openAnimationDelay 兜底。</summary>
+    private IEnumerator WaitForOpenAnimation()
+    {
+        if (chestAnimator == null)
+        {
+            yield return new WaitForSeconds(openAnimationDelay);
+            yield break;
+        }
+
+        // 先等一帧，让 Open trigger 生效进入 open 状态
+        yield return null;
+
+        float timeout = Mathf.Max(5f, openAnimationDelay);
+        float elapsed = 0f;
+        while (elapsed < timeout)
+        {
+            var state = chestAnimator.GetCurrentAnimatorStateInfo(0);
+            if (state.IsName(chestOpenStateName))
+            {
+                // open 状态播完（非循环动画 normalizedTime 到 1）
+                if (state.normalizedTime >= 1f && !chestAnimator.IsInTransition(0))
+                    yield break;
+            }
+            else if (elapsed > openAnimationDelay)
+            {
+                // 一直没有进入 open 状态（动画未配置），按兜底时间继续
+                yield break;
+            }
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+    }
+
+    /// <summary>金币飞行特效：从宝箱口生成金币并飞向玩家。</summary>
+    private IEnumerator FlyGoldVisual(Vector3 spawnPos, int totalGold)
+    {
+        if (openingPlayer == null || goldVisualPrefab == null) yield break;
+
+        List<GameObject> visuals = new List<GameObject>();
+        int coinCount = Mathf.Clamp(totalGold / 10, 1, 10);
+        for (int i = 0; i < coinCount; i++)
+        {
+            Vector3 off = new Vector3(Random.Range(-0.3f, 0.3f), 0.5f, Random.Range(-0.3f, 0.3f));
+            visuals.Add(Instantiate(goldVisualPrefab, spawnPos + off, Random.rotation));
+        }
+
+        float duration = 0.6f;
+        float elapsed = 0f;
+        float speedFactor = Mathf.Max(0.5f, itemFlySpeed * 0.2f);
+        Vector3 target = openingPlayer.transform.position + Vector3.up * 1f;
+
+        while (elapsed < duration * speedFactor)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / (duration * speedFactor));
+            for (int i = 0; i < visuals.Count; i++)
+            {
+                if (visuals[i] != null)
+                {
+                    Vector3 start = spawnPos + Vector3.right * i * 0.15f;
+                    Vector3 end = target + Random.insideUnitSphere * 0.3f;
+                    Vector3 pos = Vector3.Lerp(start, end, t);
+                    pos.y += Mathf.Sin(t * Mathf.PI) * 0.8f;
+                    visuals[i].transform.position = pos;
+                    visuals[i].transform.localScale = Vector3.Lerp(Vector3.one * 0.5f, Vector3.one, t);
+                }
+            }
+            yield return null;
+        }
+
+        foreach (var v in visuals)
+            if (v != null) Destroy(v);
     }
 
     private void UpdateReading()
@@ -355,126 +414,9 @@ public class TreasureChest : MonoBehaviour
         Destroy(gameObject);
     }
 
-    private List<GameItem> GenerateLoot()
-    {
-        // Use Inspector-configured loot table if available
-        if (lootTable.Count > 0)
-            return RollLootTable();
-        // Fallback: built-in defaults
-        return GenerateDefaultLoot();
-    }
-
-    /// <summary>Roll a weighted random entry from the loot table.</summary>
-    private List<GameItem> RollLootTable()
-    {
-        List<GameItem> items = new List<GameItem>();
-        float totalWeight = 0f;
-        foreach (var entry in lootTable) totalWeight += entry.weight;
-        if (totalWeight <= 0f) return items;
-
-        float roll = Random.Range(0f, totalWeight);
-        float cumulative = 0f;
-        foreach (var entry in lootTable)
-        {
-            cumulative += entry.weight;
-            if (roll <= cumulative)
-            {
-                int count = Random.Range(entry.minCount, entry.maxCount + 1);
-                for (int i = 0; i < count; i++)
-                {
-                    if (entry.definition != null)
-                        items.Add(entry.definition.ToGameItem());
-                    else if (entry.item != null)
-                        items.Add(entry.item.Clone());
-                }
-                break;
-            }
-        }
-        return items;
-    }
-
-    private List<GameItem> GenerateDefaultLoot()
-    {
-        List<GameItem> items = new List<GameItem>();
-        float roll = Random.value;
-
-        switch (chestType)
-        {
-            case ChestType.Wooden:
-                if (roll < 0.3f)
-                    items.Add(new GameItem { itemType = ItemType.Consumable, itemId = "health_potion_1", itemName = "初级生命药水", description = "50HP/秒，持续4秒", healAmount = 200f });
-                else if (roll < 0.6f)
-                    items.Add(new GameItem { itemType = ItemType.Currency, itemId = "gold", itemName = "金币", goldAmount = 50 });
-                else
-                    items.Add(GenerateRandomEquipment(false));
-                break;
-
-            case ChestType.Copper:
-                if (roll < 0.4f)
-                    items.Add(GenerateRandomEquipment(false));
-                else if (roll < 0.6f)
-                    items.Add(GenerateRandomEquipment(true));
-                else if (roll < 0.8f)
-                    items.Add(new GameItem { itemType = ItemType.Consumable, itemId = "health_potion_1", itemName = "初级生命药水", description = "50HP/秒，持续4秒", healAmount = 200f });
-                else
-                    items.Add(new GameItem { itemType = ItemType.Currency, itemId = "gold", itemName = "金币", goldAmount = 100 });
-
-                if (Random.value < 0.1f)
-                    items.Add(new GameItem { itemType = ItemType.Equipment, itemId = "weapon_gem_1", itemName = "普通武器宝石", description = "DPS+40", slotType = EquipmentSlotType.WeaponGem, rarity = ItemRarity.Common, statType = StatType.DPS, statValue = 40 });
-                break;
-        }
-
-        return items;
-    }
-
-    private static readonly EquipmentSlotType[] ArmorSlots =
-        { EquipmentSlotType.Wrist, EquipmentSlotType.Chest, EquipmentSlotType.Shoulder, EquipmentSlotType.Pants };
-
-    private static readonly float[] NormalHP  = { 40f, 80f, 50f, 60f };
-    private static readonly float[] QualityHP = { 100f, 200f, 150f, 150f };
-    private static readonly float[] NormalDPS  = { 15f, 20f, 15f, 15f };
-    private static readonly float[] QualityDPS = { 40f, 50f, 40f, 40f };
-
-    private static readonly string[] SlotNames = { "护腕", "铠甲", "护肩", "裤子" };
-
-    private GameItem GenerateRandomEquipment(bool isQuality)
-    {
-        int slotIndex = Random.Range(0, ArmorSlots.Length);
-        EquipmentSlotType slot = ArmorSlots[slotIndex];
-        float statValue;
-        string statDesc;
-
-        if (Random.value < 0.5f)
-        {
-            statValue = isQuality ? QualityHP[slotIndex] : NormalHP[slotIndex];
-            statDesc = "生命+" + statValue + "HP";
-        }
-        else
-        {
-            statValue = isQuality ? QualityDPS[slotIndex] : NormalDPS[slotIndex];
-            statDesc = "DPS+" + statValue;
-        }
-
-        bool isHealth = statValue > 50;
-        string prefix = isHealth ? "生命" : "力量";
-
-        return new GameItem
-        {
-            itemType = ItemType.Equipment,
-            itemId = (isQuality ? "quality_" : "common_") + prefix.ToLower() + "_" + SlotNames[slotIndex],
-            itemName = (isQuality ? "精品" : "普通") + prefix + SlotNames[slotIndex],
-            description = statDesc,
-            slotType = slot,
-            rarity = isQuality ? ItemRarity.Quality : ItemRarity.Common,
-            statType = isHealth ? StatType.Health : StatType.DPS,
-            statValue = statValue
-        };
-    }
-
     private void OnDrawGizmosSelected()
     {
         Gizmos.color = isOpened ? Color.gray : Color.yellow;
         Gizmos.DrawWireSphere(transform.position, interactDistance);
     }
 }
-

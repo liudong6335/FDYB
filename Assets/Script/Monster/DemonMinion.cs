@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.AI;
 using System.Collections.Generic;
 
@@ -53,6 +53,7 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     private NPCGoddess targetNPC;
     private DemonMinionBrain brain;
     private DemonMinionLifecycle lifecycle;
+    private MonsterDrop monsterDrop;
 
     // Level / combat state
     private int currentLevel = 1;
@@ -155,6 +156,7 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
 
         allDemons.Add(this);
         brain = GetComponent<DemonMinionBrain>();
+        monsterDrop = GetComponent<MonsterDrop>();
         lifecycle = GetComponent<DemonMinionLifecycle>();
     }
 
@@ -259,7 +261,7 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
     public void Revive(int newLevel, NPCGoddess npc) { if (lifecycle != null) lifecycle.Revive(newLevel, npc); }
 
     // ============================================
-    // Brain API �� called by DemonMinionBrain
+    // Brain API 锟斤拷 called by DemonMinionBrain
     // ============================================
 
     public void SetTarget(Transform t) { currentTarget = t; }
@@ -435,6 +437,9 @@ public class DemonMinion : MonoBehaviour, IHealthProvider, IDamageable
             animator.SetBool(isMovingHash, false);
         }
         OnDeath?.Invoke(this);
+
+        if (monsterDrop != null)
+            monsterDrop.SpawnLoot(attackerTransform);
 
         if (lifecycle != null) lifecycle.StartHideDeadBody();
     }

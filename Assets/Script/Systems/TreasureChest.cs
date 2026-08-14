@@ -265,7 +265,7 @@ public class TreasureChest : MonoBehaviour
             if (cachedInventory == null)
                 cachedInventory = FindFirstObjectByType<InventoryManager>();
             if (cachedInventory != null)
-                cachedInventory.AddItem(loot, openingPlayer);
+                cachedInventory.TryAddItem(loot, openingPlayer);
         }
 
         StartCoroutine(DelayedDestroy());

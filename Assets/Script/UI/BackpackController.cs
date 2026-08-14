@@ -77,10 +77,10 @@ public class BackpackController
             {
                 var useBtn = UIHelpers.MakeButton("UseBtn", row.transform, "Use", new Vector2(50f, 22f));
                 UIHelpers.SetAnchor(useBtn.GetComponent<RectTransform>(), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-55f, 0f), new Vector2(50f, 22f));
-                var capturedId = item.itemId;
+                var capturedItem = item;
                 useBtn.onClick.AddListener(() =>
                 {
-                    InventoryManager.Instance.UseConsumable(capturedId, currentPlayer);
+                    InventoryManager.Instance.UseConsumable(capturedItem, currentPlayer);
                     RefreshItems();
                 });
             }
@@ -88,10 +88,10 @@ public class BackpackController
             {
                 var sellBtn = UIHelpers.MakeButton("SellBtn", row.transform, "Sell", new Vector2(50f, 22f));
                 UIHelpers.SetAnchor(sellBtn.GetComponent<RectTransform>(), new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-55f, 0f), new Vector2(50f, 22f));
-                var capturedId = item.itemId;
+                var capturedItem = item;
                 sellBtn.onClick.AddListener(() =>
                 {
-                    InventoryManager.Instance.SellItem(capturedId, currentPlayer);
+                    InventoryManager.Instance.SellItem(capturedItem, currentPlayer);
                     RefreshItems();
                 });
             }

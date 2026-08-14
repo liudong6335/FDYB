@@ -29,7 +29,6 @@ public class DroppedItem : MonoBehaviour
     private float pickupRange = 4f;
 
     private const float FlyDuration = 0.6f;
-    private const int DefaultMaxSlots = 20;
 
     // ========================================
     // Public API
@@ -136,7 +135,7 @@ public class DroppedItem : MonoBehaviour
 
         if (CanAddToBackpack())
         {
-            InventoryManager.Instance.AddItem(itemData, flyTarget);
+            InventoryManager.Instance.TryAddItem(itemData, flyTarget);
             phase = DropItemPhase.Done;
             Destroy(gameObject);
         }
@@ -151,12 +150,8 @@ public class DroppedItem : MonoBehaviour
 
     private bool CanAddToBackpack()
     {
-        if (flyTarget == null || InventoryManager.Instance == null) return false;
-
-        var backpack = InventoryManager.Instance.GetPlayerBackpack(flyTarget);
-        if (backpack == null) return false;
-
-        return backpack.Count < DefaultMaxSlots;
+        if (flyTarget == null || InventoryManager.Instance == null || itemData == null) return false;
+        return InventoryManager.Instance.CanAddItem(itemData, flyTarget);
     }
 
     // ========================================
@@ -194,18 +189,8 @@ public class DroppedItem : MonoBehaviour
         {
             if (isPickupLocked || itemData == null) return;
 
-            var backpack = InventoryManager.Instance?.GetPlayerBackpack(nearest);
-            if (backpack == null) return;
-
-            if (backpack.Count < DefaultMaxSlots)
-            {
-                InventoryManager.Instance.AddItem(itemData, nearest);
+            if (InventoryManager.Instance.TryAddItem(itemData, nearest))
                 Destroy(gameObject);
-            }
-            else
-            {
-                Debug.Log("背包已满，无法拾取");
-            }
         }
         else
         {
@@ -230,13 +215,11 @@ public class DroppedItem : MonoBehaviour
             if (transform.position.SqrDistanceXZ(p.transform.position) > pickupRange * pickupRange)
                 continue;
 
-            var backpack = InventoryManager.Instance.GetPlayerBackpack(p);
-            if (backpack == null) continue;
-            if (backpack.Count >= DefaultMaxSlots) continue;
-
-            InventoryManager.Instance.AddItem(itemData, p);
-            Destroy(gameObject);
-            return;
+            if (InventoryManager.Instance.TryAddItem(itemData, p))
+            {
+                Destroy(gameObject);
+                return;
+            }
         }
     }
 }

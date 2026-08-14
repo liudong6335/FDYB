@@ -68,10 +68,15 @@ public class ShopController
         buyBtn.onClick.AddListener(() =>
         {
             var inv = InventoryManager.Instance;
-            if (currentPlayer != null && inv != null && inv.SpendGold(capturedPrice, currentPlayer))
+            if (currentPlayer != null && inv != null)
             {
                 GameItem item = CreateShopItem(capturedName, capturedDesc);
-                inv.AddItem(item, currentPlayer);
+                if (!inv.CanAddItem(item, currentPlayer)) return;
+                if (inv.SpendGold(capturedPrice, currentPlayer))
+                {
+                    if (!inv.TryAddItem(item, currentPlayer))
+                        inv.AddGold(capturedPrice, currentPlayer);
+                }
             }
         });
     }

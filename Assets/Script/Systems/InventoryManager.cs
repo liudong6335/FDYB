@@ -1,33 +1,11 @@
 /*
  * ============================================================
- *  InventoryManager  -  鑳屽寘/瑁呭绠＄悊鍣?
+ *  InventoryManager - 背包/装备管理器
  * ============================================================
  *
- * 銆愬姛鑳姐€?
- *   绠＄悊涓や釜鐜╁鐨勮澶囨爮銆佽儗鍖呫€侀噾甯併€?
- *   鏀寔瑁呭绌挎埓銆佽嚜鍔ㄥ悎鎴愩€佺墿鍝佸嚭鍞€佷娇鐢ㄦ秷鑰楀搧銆?
- *   瑁呭灞炴€т細鑷姩鍚屾鍒扮帺瀹讹紙鍔犺閲?鍔犱激瀹筹級銆?
- *
- * 銆愭寕杞藉璞°€?
- *   鍦烘櫙涓殑鍗曚緥瀵硅薄锛圖ontDestroyOnLoad锛?
- *
- * 銆愬彲璋冭妭鍙傛暟銆?
- *   startingItems  - 鍒濆鐗╁搧鍒楄〃
- *   player1 / 2    - 涓や釜鐜╁瀵硅薄鐨勫紩鐢?
- *
- * 銆愮墿鍝佺被鍨嬨€?
- *   Equipment  - 瑁呭锛堣厱鐢?鑳哥敳/鎶よ偐/瑁ゅ瓙/姝﹀櫒瀹濈煶锛?
- *   Consumable - 娑堣€楀搧锛堢敓鍛借嵂姘达級
- *   Currency   - 閲戝竵
- *
- * 銆愯澶囧悎鎴愩€?
- *   鍚屼竴閮ㄤ綅+鍚屼竴灞炴€?鍚屽搧璐ㄧ殑涓や欢瑁呭鍙互鑷姩鍚堟垚涓烘洿楂樺搧璐?
- *
- * 銆愬閮ㄨ皟鐢ㄣ€?
- *   AddItem(item, player)      - 缁欑帺瀹舵坊鍔犵墿鍝?
- *   UseConsumable(id, player)  - 浣跨敤娑堣€楀搧
- *   SellItem(id, player)       - 鍑哄敭鐗╁搧
- *   AddGold/SpendGold           - 澧炲噺閲戝竵
+ * 【功能】
+ *   管理玩家的装备栏、背包、金币，以及玩家出售池。
+ *   所有写入操作统一经过容量/金币/归属校验，失败不产生状态变化。
  */
 using UnityEngine;
 using System;
@@ -61,9 +39,18 @@ public class GameItem
     // Optional link to ScriptableObject definition
     public GameItemDefinition definition;
 
+    // Unique runtime instance id
+    public string instanceId;
+
+    public void EnsureInstanceId()
+    {
+        if (string.IsNullOrEmpty(instanceId))
+            instanceId = Guid.NewGuid().ToString("N");
+    }
+
     public GameItem Clone()
     {
-        return new GameItem
+        var copy = new GameItem
         {
             itemType = itemType,
             itemId = itemId,
@@ -77,34 +64,38 @@ public class GameItem
             goldAmount = goldAmount,
             definition = definition
         };
+        copy.EnsureInstanceId();
+        return copy;
     }
 
     public bool IsSameBaseType(GameItem other)
     {
         if (other == null) return false;
-        // Same slot, same stat type, same rarity = can synthesize
         return slotType == other.slotType && statType == other.statType && rarity == other.rarity && itemType == ItemType.Equipment;
     }
 
     public GameItem SynthesizeWith(GameItem other)
     {
         if (!IsSameBaseType(other)) return null;
-        // Upgrade rarity
+        if (rarity >= ItemRarity.Mythic) return null;
+
         ItemRarity nextRarity = rarity + 1;
         float newValue = statValue + other.statValue;
         string rarityPrefix = nextRarity == ItemRarity.Quality ? "Quality" : nextRarity == ItemRarity.Rare ? "Rare" : "Epic";
 
-        return new GameItem
+        var result = new GameItem
         {
             itemType = ItemType.Equipment,
             itemId = $"synthesized_{itemId}",
-            itemName = $"{rarityPrefix}{itemName.Replace("Common","").Replace("Quality","").Replace("Rare","")}",
+            itemName = $"{rarityPrefix}{itemName.Replace("Common", "").Replace("Quality", "").Replace("Rare", "")}",
             description = statType == StatType.Health ? $"HP+{newValue}" : $"DPS+{newValue}",
             slotType = slotType,
             rarity = nextRarity,
             statType = statType,
             statValue = newValue
         };
+        result.EnsureInstanceId();
+        return result;
     }
 }
 
@@ -114,15 +105,32 @@ public class PlayerInventory
     public Dictionary<EquipmentSlotType, GameItem> Equipped = new Dictionary<EquipmentSlotType, GameItem>();
     public List<GameItem> Backpack = new List<GameItem>();
     public int Gold;
+    public int maxSlots = 20;
+    public int UsedSlots { get { return Backpack.Count; } }
+    public bool IsFull { get { return Backpack.Count >= maxSlots; } }
 }
 
+// One listing in the shared player-sold pool
+[System.Serializable]
+public class PlayerSoldItem
+{
+    public GameItem item;
+    public PlayerMove seller;
+    public float listedTime;
+}
 
 public class InventoryManager : MonoBehaviour
 {
     [Header("Starting Items")]
     [SerializeField] private List<GameItem> startingItems = new List<GameItem>();
 
+    [Header("Sell Prices")]
+    [Tooltip("按稀有度配置玩家出售价；留空则从 Resources/SellPriceTable 加载，再回退默认值")]
+    [SerializeField] private SellPriceTable sellPriceTable;
+
     private Dictionary<PlayerMove, PlayerInventory> playerInventories = new Dictionary<PlayerMove, PlayerInventory>();
+    private readonly List<PlayerSoldItem> soldItems = new List<PlayerSoldItem>();
+    private SellPriceTable resolvedSellPriceTable;
 
     [SerializeField] private PlayerMove player1;
     [SerializeField] private PlayerMove player2;
@@ -146,6 +154,7 @@ public class InventoryManager : MonoBehaviour
     }
 
     public System.Action OnInventoryChanged;
+    public static event System.Action<PlayerMove> OnBackpackFull;
 
     private void Awake()
     {
@@ -163,74 +172,357 @@ public class InventoryManager : MonoBehaviour
         }
         if (player1 != null) playerInventories[player1] = new PlayerInventory();
         if (player2 != null) playerInventories[player2] = new PlayerInventory();
+
+        ApplyStartingItems();
     }
 
-    public void AddItem(GameItem item, PlayerMove player)
+    private void ApplyStartingItems()
     {
-        if (item == null || player == null) return;
+        if (startingItems == null || startingItems.Count == 0) return;
 
-        if (item.itemType == ItemType.Currency)
+        if (player1 != null)
         {
-            AddGold(item.goldAmount, player);
-            return;
+            var inv1 = GetInventory(player1);
+            foreach (var item in startingItems)
+                if (item != null) AddItemCore(item.Clone(), inv1, player1);
         }
-
-        if (item.itemType == ItemType.Equipment)
+        if (player2 != null)
         {
-            AddEquipment(item, player);
-        }
-        else
-        {
-            var backpack = GetBackpack(player);
-            backpack.Add(item);
+            var inv2 = GetInventory(player2);
+            foreach (var item in startingItems)
+                if (item != null) AddItemCore(item.Clone(), inv2, player2);
         }
 
         OnInventoryChanged?.Invoke();
     }
 
-    private void AddEquipment(GameItem item, PlayerMove player)
+    // ========================================
+    // Public API
+    // ========================================
+
+    /// <summary>Legacy wrapper for TryAddItem. Success returns true.</summary>
+    public bool AddItem(GameItem item, PlayerMove player)
     {
-        var equipped = GetEquipped(player);
+        return TryAddItem(item, player);
+    }
 
-        if (!equipped.ContainsKey(item.slotType) || equipped[item.slotType] == null)
+    public bool TryAddItem(GameItem item, PlayerMove player)
+    {
+        if (item == null || player == null) return false;
+
+        var inv = GetInventory(player);
+        item.EnsureInstanceId();
+
+        if (item.itemType == ItemType.Currency)
         {
-            // Auto-equip first item in slot
-            equipped[item.slotType] = item;
-            ApplyEquipmentStats(player);
-            return;
+            if (item.goldAmount <= 0) return false;
+            inv.Gold += item.goldAmount;
+            OnInventoryChanged?.Invoke();
+            return true;
         }
 
-        GameItem current = equipped[item.slotType];
-
-        // Check if can synthesize (same base type)
-        if (current.IsSameBaseType(item))
+        if (!CanAddItem(item, player))
         {
-            GameItem synthesized = current.SynthesizeWith(item);
-            if (synthesized != null)
-            {
-                equipped[item.slotType] = synthesized;
-                ApplyEquipmentStats(player);
-                return;
-            }
+            FireBackpackFull(player);
+            return false;
         }
 
-        // Check if new item is better (higher rarity or higher stat)
-        bool isBetter = item.rarity > current.rarity ||
-            (item.rarity == current.rarity && item.statValue > current.statValue);
-
-        if (isBetter)
+        if (!AddItemCore(item, inv, player))
         {
-            var backpack = GetBackpack(player);
-            backpack.Add(current);
-            equipped[item.slotType] = item;
+            FireBackpackFull(player);
+            return false;
         }
-        else
+        OnInventoryChanged?.Invoke();
+        return true;
+    }
+
+    public bool CanAddItem(GameItem item, PlayerMove player)
+    {
+        if (item == null || player == null) return false;
+        if (item.itemType == ItemType.Currency) return item.goldAmount > 0;
+
+        var inv = GetInventory(player);
+        if (item.itemType == ItemType.Equipment)
         {
-            var backpack = GetBackpack(player);
-            backpack.Add(item);
+            if (!inv.Equipped.TryGetValue(item.slotType, out var current) || current == null)
+                return true;
+            if (current.IsSameBaseType(item))
+                return true;
+        }
+        return !inv.IsFull;
+    }
+
+    public int GetBackpackCapacity(PlayerMove player)
+    {
+        return GetInventory(player)?.maxSlots ?? 0;
+    }
+
+    public int GetBackpackCount(PlayerMove player)
+    {
+        var inv = GetInventory(player);
+        return inv != null ? inv.UsedSlots : 0;
+    }
+
+    public void AddGold(int amount, PlayerMove player)
+    {
+        if (player == null || amount <= 0) return;
+        var inv = GetInventory(player);
+        inv.Gold += amount;
+        OnInventoryChanged?.Invoke();
+    }
+
+    public bool SpendGold(int amount, PlayerMove player)
+    {
+        if (player == null || amount <= 0) return false;
+        var inv = GetInventory(player);
+        if (inv.Gold < amount) return false;
+        inv.Gold -= amount;
+        OnInventoryChanged?.Invoke();
+        return true;
+    }
+
+    public bool UseConsumable(GameItem item, PlayerMove player)
+    {
+        if (item == null || player == null) return false;
+        var backpack = GetBackpack(player);
+        if (backpack == null || !backpack.Contains(item)) return false;
+        if (item.itemType != ItemType.Consumable || item.healAmount <= 0) return false;
+
+        backpack.Remove(item);
+        player.GetComponent<Health>()?.Heal(item.healAmount);
+        OnInventoryChanged?.Invoke();
+        return true;
+    }
+
+    public bool UseConsumable(GameItem item, PlayerMove giver, PlayerMove target)
+    {
+        if (item == null || giver == null || target == null) return false;
+        var backpack = GetBackpack(giver);
+        if (backpack == null || !backpack.Contains(item)) return false;
+        if (item.itemType != ItemType.Consumable || item.healAmount <= 0) return false;
+
+        backpack.Remove(item);
+        target.GetComponent<Health>()?.Heal(item.healAmount);
+        OnInventoryChanged?.Invoke();
+        return true;
+    }
+
+    /// <summary>Legacy id-based overload; resolves the first matching backpack instance.</summary>
+    public bool UseConsumable(string itemId, PlayerMove player)
+    {
+        if (string.IsNullOrEmpty(itemId) || player == null) return false;
+        var backpack = GetBackpack(player);
+        if (backpack == null) return false;
+        var item = backpack.Find(i => i != null && i.itemId == itemId && i.itemType == ItemType.Consumable);
+        return item != null && UseConsumable(item, player);
+    }
+
+    public bool UseConsumable(string itemId, PlayerMove giver, PlayerMove target)
+    {
+        if (string.IsNullOrEmpty(itemId) || giver == null || target == null) return false;
+        var backpack = GetBackpack(giver);
+        if (backpack == null) return false;
+        var item = backpack.Find(i => i != null && i.itemId == itemId && i.itemType == ItemType.Consumable);
+        return item != null && UseConsumable(item, giver, target);
+    }
+
+    public bool SellItem(GameItem item, PlayerMove player)
+    {
+        if (item == null || player == null) return false;
+
+        var inv = GetInventory(player);
+        if (!inv.Backpack.Contains(item)) return false;
+
+        int price = GetSellPrice(item);
+        if (price <= 0) return false;
+
+        inv.Backpack.Remove(item);
+        soldItems.Add(new PlayerSoldItem { item = item, seller = player, listedTime = Time.time });
+        inv.Gold += price;
+        OnInventoryChanged?.Invoke();
+        return true;
+    }
+
+    /// <summary>Legacy id-based overload; resolves the first matching backpack instance.</summary>
+    public bool SellItem(string itemId, PlayerMove player)
+    {
+        if (string.IsNullOrEmpty(itemId) || player == null) return false;
+        var backpack = GetBackpack(player);
+        if (backpack == null) return false;
+        var item = backpack.Find(i => i != null && i.itemId == itemId);
+        return item != null && SellItem(item, player);
+    }
+
+    public int GetSellPrice(GameItem item)
+    {
+        if (item == null) return 0;
+        return ResolveSellPriceTable().GetPrice(item.rarity);
+    }
+
+    public IReadOnlyList<PlayerSoldItem> GetSoldItems(PlayerMove viewer)
+    {
+        var result = new List<PlayerSoldItem>();
+        foreach (var entry in soldItems)
+        {
+            if (entry == null || entry.item == null) continue;
+            if (viewer != null && ReferenceEquals(entry.seller, viewer)) continue;
+            result.Add(entry);
+        }
+        return result;
+    }
+
+    public bool BuySoldItem(PlayerSoldItem entry, PlayerMove buyer)
+    {
+        if (entry == null || entry.item == null || buyer == null) return false;
+        if (ReferenceEquals(entry.seller, buyer)) return false;
+        if (!soldItems.Contains(entry)) return false;
+
+        var inv = GetInventory(buyer);
+        int price = GetSellPrice(entry.item);
+        if (price > 0 && inv.Gold < price) return false;
+        if (!CanAddItem(entry.item, buyer))
+        {
+            FireBackpackFull(buyer);
+            return false;
         }
 
+        if (price > 0) inv.Gold -= price;
+        soldItems.Remove(entry);
+
+        if (!AddItemCore(entry.item, inv, buyer))
+        {
+            if (price > 0) inv.Gold += price;
+            soldItems.Add(entry);
+            return false;
+        }
+
+        OnInventoryChanged?.Invoke();
+        return true;
+    }
+
+    public bool CancelListing(PlayerSoldItem entry, PlayerMove seller)
+    {
+        if (entry == null || entry.item == null || seller == null) return false;
+        if (!ReferenceEquals(entry.seller, seller)) return false;
+        if (!soldItems.Contains(entry)) return false;
+
+        var inv = GetInventory(seller);
+        if (!CanAddItem(entry.item, seller))
+        {
+            FireBackpackFull(seller);
+            return false;
+        }
+
+        soldItems.Remove(entry);
+        if (!AddItemCore(entry.item, inv, seller))
+        {
+            soldItems.Add(entry);
+            return false;
+        }
+
+        OnInventoryChanged?.Invoke();
+        return true;
+    }
+
+    public bool DestroyItem(GameItem item, PlayerMove player)
+    {
+        if (item == null || player == null) return false;
+        var inv = GetInventory(player);
+        if (!inv.Backpack.Contains(item)) return false;
+
+        inv.Backpack.Remove(item);
+        OnInventoryChanged?.Invoke();
+        return true;
+    }
+
+    public bool Unequip(EquipmentSlotType slot, PlayerMove player)
+    {
+        if (player == null) return false;
+        var inv = GetInventory(player);
+        if (!inv.Equipped.TryGetValue(slot, out var item) || item == null) return false;
+        if (inv.IsFull)
+        {
+            FireBackpackFull(player);
+            return false;
+        }
+
+        inv.Equipped.Remove(slot);
+        inv.Backpack.Add(item);
         ApplyEquipmentStats(player);
+        OnInventoryChanged?.Invoke();
+        return true;
+    }
+
+    public List<GameItem> GetPlayerBackpack(PlayerMove player)
+    {
+        var inv = GetInventory(player);
+        return inv != null ? inv.Backpack : null;
+    }
+
+    public int GetGold(PlayerMove player)
+    {
+        var inv = GetInventory(player);
+        return inv != null ? inv.Gold : 0;
+    }
+
+    public Dictionary<EquipmentSlotType, GameItem> GetP1Equipped() { return player1 != null ? GetInventory(player1).Equipped : null; }
+    public Dictionary<EquipmentSlotType, GameItem> GetP2Equipped() { return player2 != null ? GetInventory(player2).Equipped : null; }
+    public List<GameItem> GetP1Backpack() { return player1 != null ? GetInventory(player1).Backpack : null; }
+    public List<GameItem> GetP2Backpack() { return player2 != null ? GetInventory(player2).Backpack : null; }
+    public int P1Gold { get { return player1 != null ? GetInventory(player1).Gold : 0; } }
+    public int P2Gold { get { return player2 != null ? GetInventory(player2).Gold : 0; } }
+
+    // ========================================
+    // Internal
+    // ========================================
+
+    private bool AddItemCore(GameItem item, PlayerInventory inv, PlayerMove player)
+    {
+        if (item == null || inv == null) return false;
+        item.EnsureInstanceId();
+
+        if (item.itemType == ItemType.Equipment)
+        {
+            if (!inv.Equipped.TryGetValue(item.slotType, out var current) || current == null)
+            {
+                inv.Equipped[item.slotType] = item;
+                ApplyEquipmentStats(player);
+                return true;
+            }
+
+            if (current.IsSameBaseType(item))
+            {
+                GameItem synthesized = current.SynthesizeWith(item);
+                if (synthesized != null)
+                {
+                    inv.Equipped[item.slotType] = synthesized;
+                    ApplyEquipmentStats(player);
+                    return true;
+                }
+            }
+
+            if (inv.IsFull) return false;
+
+            bool isBetter = item.rarity > current.rarity ||
+                (item.rarity == current.rarity && item.statValue > current.statValue);
+
+            if (isBetter)
+            {
+                inv.Backpack.Add(current);
+                inv.Equipped[item.slotType] = item;
+            }
+            else
+            {
+                inv.Backpack.Add(item);
+            }
+
+            ApplyEquipmentStats(player);
+            return true;
+        }
+
+        if (inv.IsFull) return false;
+        inv.Backpack.Add(item);
+        return true;
     }
 
     private void ApplyEquipmentStats(PlayerMove player)
@@ -240,7 +532,7 @@ public class InventoryManager : MonoBehaviour
         float totalHPBonus = 0f;
         float totalDPSMultiplier = 1f;
 
-        var equipped = GetEquipped(player);
+        var equipped = GetInventory(player).Equipped;
         foreach (var kvp in equipped)
         {
             if (kvp.Value == null) continue;
@@ -267,104 +559,39 @@ public class InventoryManager : MonoBehaviour
         }
     }
 
-    public void UseConsumable(string itemId, PlayerMove player)
+    private SellPriceTable ResolveSellPriceTable()
     {
-        var backpack = GetBackpack(player);
-        GameItem item = backpack.Find(i => i.itemId == itemId && i.itemType == ItemType.Consumable);
-        if (item != null)
+        if (resolvedSellPriceTable != null) return resolvedSellPriceTable;
+
+        if (sellPriceTable != null)
         {
-            backpack.Remove(item);
-            // Heal effect
-            if (item.healAmount > 0)
-            {
-                player.GetComponent<Health>()?.Heal(item.healAmount);
-            }
-            OnInventoryChanged?.Invoke();
+            resolvedSellPriceTable = sellPriceTable;
         }
-    }
-
-    /// <summary>Use a consumable from one player's backpack to heal another player.</summary>
-    public void UseConsumable(string itemId, PlayerMove giver, PlayerMove target)
-    {
-        var backpack = GetBackpack(giver);
-        GameItem item = backpack.Find(i => i.itemId == itemId && i.itemType == ItemType.Consumable);
-        if (item != null)
+        else
         {
-            backpack.Remove(item);
-            // Heal effect
-            if (item.healAmount > 0)
-            {
-                target.GetComponent<Health>()?.Heal(item.healAmount);
-            }
-            OnInventoryChanged?.Invoke();
+            resolvedSellPriceTable = Resources.Load<SellPriceTable>("SellPriceTable");
+            if (resolvedSellPriceTable == null)
+                resolvedSellPriceTable = ScriptableObject.CreateInstance<SellPriceTable>();
         }
+        return resolvedSellPriceTable;
     }
 
-    public void SellItem(string itemId, PlayerMove player)
+    private void FireBackpackFull(PlayerMove player)
     {
-        var backpack = GetBackpack(player);
-        GameItem item = backpack.Find(i => i.itemId == itemId);
-        if (item != null)
-        {
-            backpack.Remove(item);
-            int sellPrice = item.rarity == ItemRarity.Common ? 25 : (item.rarity == ItemRarity.Quality ? 50 : 100);
-            AddGold(sellPrice, player);
-            OnInventoryChanged?.Invoke();
-        }
-    }
-
-    public void AddGold(int amount, PlayerMove player)
-    {
-        var inv = GetInventory(player);
-        if (inv != null) inv.Gold += amount;
-        OnInventoryChanged?.Invoke();
-    }
-
-    public List<GameItem> GetPlayerBackpack(PlayerMove player)
-    {
-        var inv = GetInventory(player);
-        return inv != null ? inv.Backpack : null;
-    }
-
-    public int GetGold(PlayerMove player)
-    {
-        var inv = GetInventory(player);
-        return inv != null ? inv.Gold : 0;
-    }
-
-    public bool SpendGold(int amount, PlayerMove player)
-    {
-        var inv = GetInventory(player);
-        if (inv != null && inv.Gold >= amount) { inv.Gold -= amount; OnInventoryChanged?.Invoke(); return true; }
-        return false;
+        OnBackpackFull?.Invoke(player);
     }
 
     private PlayerInventory GetInventory(PlayerMove player)
     {
+        if (player == null) return null;
         if (playerInventories.TryGetValue(player, out var inv)) return inv;
-        var newInv = new PlayerInventory();
-        playerInventories[player] = newInv;
-        return newInv;
-    }
-
-    private Dictionary<EquipmentSlotType, GameItem> GetEquipped(PlayerMove player)
-    {
-        return GetInventory(player)?.Equipped;
+        inv = new PlayerInventory();
+        playerInventories[player] = inv;
+        return inv;
     }
 
     private List<GameItem> GetBackpack(PlayerMove player)
     {
         return GetInventory(player)?.Backpack;
     }
-
-    public Dictionary<EquipmentSlotType, GameItem> GetP1Equipped() { return player1 != null ? GetInventory(player1).Equipped : null; }
-    public Dictionary<EquipmentSlotType, GameItem> GetP2Equipped() { return player2 != null ? GetInventory(player2).Equipped : null; }
-    public List<GameItem> GetP1Backpack() { return player1 != null ? GetInventory(player1).Backpack : null; }
-    public List<GameItem> GetP2Backpack() { return player2 != null ? GetInventory(player2).Backpack : null; }
-    public int P1Gold { get { return player1 != null ? GetInventory(player1).Gold : 0; } }
-    public int P2Gold { get { return player2 != null ? GetInventory(player2).Gold : 0; } }
 }
-
-
-
-

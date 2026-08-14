@@ -90,6 +90,7 @@ public class PlayerHealth : MonoBehaviour, IHealthProvider, IDamageable
         if (inv == null) return;
         var backpack = inv.GetPlayerBackpack(player);
         if (backpack == null) return;
+        bool inventoryChanged = false;
 
         // 倒序遍历，避免 RemoveAt 导致索引错乱
         for (int i = backpack.Count - 1; i >= 0; i--)
@@ -114,8 +115,9 @@ public class PlayerHealth : MonoBehaviour, IHealthProvider, IDamageable
                 dropped.Launch(item, null, float.MaxValue);
             }
 
-            inv.OnInventoryChanged?.Invoke();
+            inventoryChanged = true;
         }
+        if (inventoryChanged) inv.OnInventoryChanged?.Invoke();
     }
 
     public void TakeDamage(float dmg)

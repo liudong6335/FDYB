@@ -74,7 +74,7 @@ public class MonsterDrop : MonoBehaviour
         {
             var inv = InventoryManager.Instance;
             if (inv != null)
-                inv.AddItem(item, target);
+                inv.TryAddItem(item, target);
         }
     }
 

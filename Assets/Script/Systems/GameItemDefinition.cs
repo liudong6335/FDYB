@@ -1,8 +1,9 @@
+using System;
 using UnityEngine;
 
 /// <summary>
 /// ScriptableObject asset for item templates.
-/// Create instances via Assets 鈫?Create 鈫?Game/Item Definition.
+/// Create instances via Assets > Create > Game/Item Definition.
 /// </summary>
 [CreateAssetMenu(menuName = "Game/Item Definition")]
 public class GameItemDefinition : ScriptableObject
@@ -57,7 +58,8 @@ public class GameItemDefinition : ScriptableObject
             statValue = statValue,
             healAmount = healAmount,
             goldAmount = goldAmount,
-            definition = this
+            definition = this,
+            instanceId = Guid.NewGuid().ToString("N")
         };
     }
 }

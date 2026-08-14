@@ -6029,7 +6029,6 @@ GameObject:
   - component: {fileID: 1053957541}
   - component: {fileID: 1053957540}
   - component: {fileID: 1053957539}
-  - component: {fileID: 1053957547}
   - component: {fileID: 1053957549}
   - component: {fileID: 1053957550}
   - component: {fileID: 1053957551}
@@ -6217,18 +6216,6 @@ Transform:
   - {fileID: 1630950611}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1053957547
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1053957538}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c9ee9dd262317b64da553d51b4872bd1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerAIController
 --- !u!114 &1053957549
 MonoBehaviour:
   m_ObjectHideFlags: 0

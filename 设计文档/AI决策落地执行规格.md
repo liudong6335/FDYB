@@ -501,6 +501,19 @@ acceptAlliance = OR(
 |------|-------|------|
 | `cfg_trustAccept` | 60 | trust 高于此值接受结盟 |
 
+### 7.3 回魂契约决策（初版）
+
+- AI 死亡后，只要满足回魂资格，就自动发起回魂申请，不做额外概率判断。
+- AI 作为存活方收到回魂申请时，只使用双方已公开的防具宝石状态与自身 `trustScore`。
+- 任意一方没有已装备防具宝石时，AI 直接拒绝。
+- 双方都有防具宝石且 `trustScore >= cfg_trustRevive` 时，AI 接受回魂。
+- `trustScore < cfg_trustRevive` 时，AI 拒绝回魂。
+- 本阶段不加入隐藏库存、装备价值、Boss 进度或人格差异的额外判断，保持条件简单可复现。
+
+| 参数 | 初始值 | 说明 |
+|------|-------|------|
+| `cfg_trustRevive` | 60 | trust 高于或等于此值时接受回魂 |
+
 ---
 
 ## 八、参数配置表（外置，非硬编码）
@@ -514,6 +527,7 @@ acceptAlliance = OR(
 | `cfg_survivalHp` | 0.25 | 0.15-0.40 | 生存 |
 | `cfg_soloHpMin` | 0.30 | 0.20-0.50 | 圣物 solo |
 | `cfg_soloOpponentNearPenalty` | 1.5 | 1.0-2.5 | 圣物 solo |
+| cfg_trustRevive | 60 | 存活 AI 接受回魂的最低信任分 |
 | `cfg_allianceHpThreshold` | 0.40 | 0.30-0.60 | 结盟 |
 | `cfg_trustAccept` | 60 | 40-80 | 结盟 |
 | `cfg_bossAllyProb` | 0.50 | 0.3-0.7 | Boss 结盟响应 |

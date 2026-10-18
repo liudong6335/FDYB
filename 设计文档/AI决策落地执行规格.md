@@ -3,6 +3,7 @@
 > 版本：v0.2（原型阶段 · 决策逻辑的可执行规格）
 > 定位：作为《AI 机制开发设计文档 v0.7》第八节的**可执行规格**。主文档给出方向与架构，本规格给出**输入字段、评分公式、阈值取值、输出行为**的完整实现依据，使 Agent 可将决策逻辑直接翻译为 C#。
 > 修订说明（v0.2）：完成并入修正——统一决策函数签名与决策频率、`trustScore` / `inferredLabel` 移入记忆、补齐 `PRESS` / `CATCH_UP` 路线映射、加入固定 `seed` 确定性、补充无头数值沙盘与终局评分权重、统一 aggressionScore 参数配置。
+> 文档边界：本文属于《Player 与 AI 开发索引》下的 AI Player 子模块，作为可执行 AI 决策规格。
 > 原则：评分函数 + 阈值（不用行为树/机器学习）；自由决策与策略锁定（`StrategyOverride`）走**同一套决策函数**，仅输入被覆盖；全部阈值外置为配置表，不硬编码。
 
 ---
@@ -40,8 +41,19 @@ Decision Decide(
 - **决策周期**：固定 0.2s（5Hz），每次都重新评估（生存/事件优先级高，需即时响应）。
 - **局势快照周期**：10s，按 `gameTime % 10 == phase` 刷新 `PlayerView` 与趋势采样（见主文档 5.6.1）。
 - **事件响应**：被攻击、结盟申请、心出现、Boss 结盟发起 → **立即触发，不走周期**，可打断当前行为。
+- **结盟版本覆盖**：结盟开始、结束或翻脸时立即更新 `allianceState / allianceTargetId` 并递增 `allianceVersion`；目标过滤使用最新版本，10 秒战略快照不整体重掷。
+- **结盟到期刷新**：正常到期 T0 立即刷新目标/求生/策略结盟区块/AI 视角；T+3 惩罚仇恨生效时立即刷新目标排序并递增 `revengeHateVersion`。
+- **死亡强制刷新**：自身淘汰、对手淘汰或 Boss 死亡 → 先结束涉及死亡方的结盟并递增 allianceVersion，再立即刷新所有活动快照；不等待 5s / 10s 周期，刷新后同帧后续决策使用新值。
 
 > 关键：决策是"高频的"，快照是"低频的"。高频决策消费低频快照，**快照过期 ≠ 无响应**（事件通道独立）。这解决了主文档 5.6.1「错峰只制造信息新旧差、不制造响应延迟」的实现口径。
+
+### 1.4 与 Boss 快照机制的复用边界
+
+- 复用 Boss 的通用机制：快照版本 / 时间、周期刷新、相位错峰、事件强制刷新、死亡刷新和可复现日志。
+- 复用 Boss 的实时关系版本语义：`allianceState` 变化立即覆盖，`allianceVersion` 用于目标过滤和日志校验。
+- 复用关键生命阈值跨线立即刷新：AI 使用自己的生存阈值，不复制 Boss 的 35% / 10% 配置。
+- 不复用 Boss 的业务阈值：求生阈值、结盟判定、战力压制、仇恨公式和 Boss 技能槽映射。
+- AI 必须有独立的 `snapshotProfile` 与输入集合；Boss 快照机制只作为通用实现参考。
 
 ---
 
@@ -59,6 +71,7 @@ SelfState:
     inEndgame                  // 是否进入终局模式（时间/海平面/Boss 可挑战）
     isUnderdog                 // 是否处于弱势（见 4.1 弱势判定）
     currentAlly                // None / Player / Boss
+    allianceVersion            // 结盟关系实时版本
     allianceTimer              // 当前结盟剩余时间（秒）
     allianceCooldown           // 结盟可用剩余冷却（秒）
     heartProgress              // 心拾取读条进度 0-1（0=未在拾取）
@@ -88,6 +101,7 @@ BossState:
     currentEnrageLayer          // 强化层数（每 30s 一层，见 5.4）
     hpRatio                    // Boss 血量比例（终局用）
     allianceWith               // None / Player0 / Player1（Boss 结盟对象）
+    allianceVersion            // Boss/玩家结盟关系实时版本
 
 WorldState:
     gameTime                   // 对局内累计游戏时间（秒，非真实时间）
@@ -615,6 +629,7 @@ enum Action:
 | 参数敏感性 | 杀怪权重 3→10 | `trend` 进入 URGENT 的频率 ↑，**且**克制路线占比 ↑（若占比不变说明趋势感知未生效） |
 | 结盟触发 | 己方 hp 20% + Boss 进度 85% | `isUnderdog == true` AND `acceptAlliance == true` 至少一次 |
 | 翻脸行为 | 两 AI 结盟后等待结束 | `recentlyBetrayedTimer > 0` 的一方在结束后 3s 内发起 `ATTACK_OPPONENT` |
+| 死亡快照刷新 | 固定相位点之外制造玩家淘汰 / Boss 死亡 | 事件结算后立即刷新一次；后续决策使用死亡后的新快照，日志记录强制刷新原因 |
 
 **可选两项（圣物/囤塔）：**
 

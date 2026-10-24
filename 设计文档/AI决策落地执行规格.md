@@ -1,7 +1,9 @@
-# 《分道扬镳》AI 决策落地执行规格（主文档 v0.7 配套）
+# 《分道扬镳》AI 决策落地执行规格（主文档 v0.8 配套）
 
-> 版本：v0.2（原型阶段 · 决策逻辑的可执行规格）
-> 定位：作为《AI 机制开发设计文档 v0.7》第八节的**可执行规格**。主文档给出方向与架构，本规格给出**输入字段、评分公式、阈值取值、输出行为**的完整实现依据，使 Agent 可将决策逻辑直接翻译为 C#。
+> 版本：v0.4（原型阶段 · 决策逻辑的可执行规格）
+> 定位：作为《AI 机制开发设计文档 v0.8》第八节的**可执行规格**。主文档给出方向与架构，本规格给出**输入字段、评分公式、阈值取值、输出行为**的完整实现依据，使 Agent 可将决策逻辑直接翻译为 C#。
+> 修订说明（v0.3）：同步冻结主动结盟申请门槛、Boss / 玩家 60 / 120 秒申请冷却、5 秒协商锁与 Boss 结盟后 10 秒封锁。
+> 修订说明（v0.4）：同步冻结 3 秒单向申请等待期，移除 Boss 结盟仇恨门槛。
 > 修订说明（v0.2）：完成并入修正——统一决策函数签名与决策频率、`trustScore` / `inferredLabel` 移入记忆、补齐 `PRESS` / `CATCH_UP` 路线映射、加入固定 `seed` 确定性、补充无头数值沙盘与终局评分权重、统一 aggressionScore 参数配置。
 > 文档边界：本文属于《Player 与 AI 开发索引》下的 AI Player 子模块，作为可执行 AI 决策规格。
 > 原则：评分函数 + 阈值（不用行为树/机器学习）；自由决策与策略锁定（`StrategyOverride`）走**同一套决策函数**，仅输入被覆盖；全部阈值外置为配置表，不硬编码。
@@ -64,7 +66,11 @@ Decision Decide(
 ```text
 SelfState:
     hp, hpMax                  // 血量、上限
+    hpRatio                    // 当前生命比例
     power                      // 综合战力（含已放置塔 towerPlaced）
+    bossHateTotal              // 当前对 Boss 的总仇恨（伤害 + 圣物 + 追杀）
+    selfRelicHate              // 当前圣物仇恨分项
+    alivePlayerCount           // 存活玩家数
     towerStock, towerPlaced    // 背包囤塔数、已放置塔数（必须区分，见 5.3）
     hasRelic                   // 是否持有圣物
     relicType                  // 日之石 / 月之石（影响减伤 50%/40%）
@@ -73,7 +79,15 @@ SelfState:
     currentAlly                // None / Player / Boss
     allianceVersion            // 结盟关系实时版本
     allianceTimer              // 当前结盟剩余时间（秒）
-    allianceCooldown           // 结盟可用剩余冷却（秒）
+    hasPendingAllianceRequest  // 发起或收到且尚未响应完成的待确认申请
+    allianceRequestRole        // None / Applicant / Target
+    allianceRequestTargetId
+    allianceRequestRestrictionUntil
+    incomingApplicationDamage  // 等待期内目标归属单位对申请者的累计实际伤害
+    bossAllianceRequestCooldownUntil
+    playerAllianceRequestCooldownUntil
+    bossAlliancePvpBlockedUntil
+    playerAllianceNegotiationBlockedUntil
     heartProgress              // 心拾取读条进度 0-1（0=未在拾取）
 ```
 
@@ -98,8 +112,10 @@ PlayerView:
 BossState:
     progress                   // 共享苏醒/强化进度 0-100
     awaken                     // 是否已苏醒（可挑战）
+    phaseState                 // Weak / Normal / Rage
     currentEnrageLayer          // 强化层数（每 30s 一层，见 5.4）
     hpRatio                    // Boss 血量比例（终局用）
+    currentTarget              // Boss 当前目标实体 ID
     allianceWith               // None / Player0 / Player1（Boss 结盟对象）
     allianceVersion            // Boss/玩家结盟关系实时版本
 
@@ -171,7 +187,7 @@ EndgameScore(action) = w_gain * 收益期望
 | `击杀圣物持有者` | 抢夺圣物后 solo 收益高 | Boss 仇恨、对手反击 |
 | `solo Boss` | 圣物减伤下收益高（w_progress=1.0） | Boss 强化层威胁（w_bossThreat） |
 | `结盟（玩家间）` | 结盟期内输出安全（w_risk） | 结盟结束被翻脸风险、时间成本 |
-| `结盟（弱者+Boss）` | 摆脱被追杀、争取发育窗口 | Boss 结盟仅 17s，窗口短 |
+| `结盟（弱者+Boss）` | 摆脱被追杀、争取发育窗口 | Boss 结盟仅 20s，窗口短 |
 | `风筝/拖延` | 保命、等结盟冷却 | 进度落后、Boss 持续强化 |
 | `放置囤塔` | 战力一次性计入、风筝翻盘 | 放置窗口需安全，否则被打断 |
 
@@ -184,10 +200,19 @@ ELSE IF heartState == 已掉落可争夺 AND self 可到达:
     → action = 抢夺心（评分通常最高，除非自身残血）
 ELSE IF hasRelic AND boss.awaken AND hpRatio > 0.3:
     → action = solo Boss（圣物减伤收益覆盖结盟）
-ELSE IF allianceCooldown == 0 AND hpRatio < cfg_allianceHpThreshold:
-    IF isUnderdog AND boss.allianceWith ≠ self AND deterministicRand(seed, gameTime) < cfg_bossAllyProb:
+ELSE IF hpRatio < cfg_allianceHpThreshold:
+    IF isUnderdog
+       AND boss.phaseState ≠ Rage
+       AND hpRatio >= 0.30
+       AND bossAllianceRequestCooldownUntil <= gameTime
+       AND currentAlly == None
+       AND boss.allianceWith ≠ self
+       AND deterministicRand(seed, gameTime) < cfg_aiBossAllyApplyProb:
         → action = 申请"弱者+Boss"结盟
-    ELSE:
+    ELSE IF playerAllianceRequestCooldownUntil <= gameTime
+            AND playerAllianceNegotiationBlockedUntil <= gameTime
+            AND bossAlliancePvpBlockedUntil <= gameTime
+            AND currentAlly == None:
         → action = 申请"玩家间"结盟
 ELSE IF towerStock > 0 AND currentAlly == None:
     → action = 放置囤塔（风筝/翻盘）
@@ -544,7 +569,7 @@ acceptAlliance = OR(
 | cfg_trustRevive | 60 | 存活 AI 接受回魂的最低信任分 |
 | `cfg_allianceHpThreshold` | 0.40 | 0.30-0.60 | 结盟 |
 | `cfg_trustAccept` | 60 | 40-80 | 结盟 |
-| `cfg_bossAllyProb` | 0.50 | 0.3-0.7 | Boss 结盟响应 |
+| `cfg_aiBossAllyApplyProb` | 0.50 | 0.3-0.7 | AI 发起 Boss 结盟申请；Boss 是否接受由 Boss 侧规则决定 |
 | `cfg_rateLow` | 1.5 %/s | 1.0-2.5 | 趋势感知 |
 | `cfg_rateHigh` | 3.5 %/s | 2.5-5.0 | 趋势感知 |
 | `T_sample` | 10 s | 固定 | 快照周期 |
@@ -574,7 +599,12 @@ acceptAlliance = OR(
 > 以下参数属于**游戏机制层**（非 AI 决策层），由游戏运行时提供，AI 只读。此处仅列出 AI 依赖的字段，确保接口对齐：
 
 - 共享击杀权重阈值（100）、玩家击杀权重倍数（4）、个人权重→恶魔分身（65%）
-- 结盟时长：玩家间 35s、弱者+Boss 17s、确认 2-3s、冷却 30s
+- 结盟时长：玩家间 45s、弱者+Boss 20s、确认 2-3s
+- 主动申请冷却：Boss 60s、玩家间 120s；均从有效提交时开始，接受/拒绝响应不触发自己的冷却
+- 玩家间申请被拒/超时后双方 5s 协商锁；Boss 结盟期间及结束后 10s 内禁止玩家间结盟
+- Boss 结盟硬门槛：玩家生命比例 >=30%；Boss 仇恨不限制申请或接受
+- 有效申请后 3s 等待期：申请者及归属单位停止伤害目标，目标保持自由
+- 目标主动攻击或目标归属单位累计造成 >5% 当前最大生命实际伤害：视为拒绝
 - 圣物减伤：日 50% / 月 40%
 - 心拾取读条 10s、受击回退、移动重置
 - 塔配额 4 / 保底 2、结盟锁定
@@ -627,7 +657,7 @@ enum Action:
 | 检查 | 操作 | 通过的量化标准 |
 |------|-------------------|
 | 参数敏感性 | 杀怪权重 3→10 | `trend` 进入 URGENT 的频率 ↑，**且**克制路线占比 ↑（若占比不变说明趋势感知未生效） |
-| 结盟触发 | 己方 hp 20% + Boss 进度 85% | `isUnderdog == true` AND `acceptAlliance == true` 至少一次 |
+| 结盟触发 | 己方 hp 30% + Boss 进度 85% | `isUnderdog == true` AND `acceptAlliance == true` 至少一次 |
 | 翻脸行为 | 两 AI 结盟后等待结束 | `recentlyBetrayedTimer > 0` 的一方在结束后 3s 内发起 `ATTACK_OPPONENT` |
 | 死亡快照刷新 | 固定相位点之外制造玩家淘汰 / Boss 死亡 | 事件结算后立即刷新一次；后续决策使用死亡后的新快照，日志记录强制刷新原因 |
 
@@ -665,7 +695,7 @@ enum Action:
 3. **激进评分（4.3）无权重版本**：先令所有权重=0.5（纯中性），确认评分在 [0,1] 且不震荡（滞回生效）。
 4. **路线选择 + 囤塔（5.2）**：确认发育期 `towerStock` 累积、结盟锁定生效。
 5. **圣物决策（3.3）+ 终局切换（3.1）**：注入 `hasRelic=true`，确认 `soloWillingness` 计算正确。
-6. **事件响应（7.2）+ 生存**：人工制造"血量 20% + 结盟申请"，确认立即响应。
+6. **事件响应（7.2）+ 生存**：人工制造"血量 30% + 结盟申请"，确认立即响应。
 7. **PlayerView（2.2）+ trust（4.4）**：先用手动注入的对手数据（不走快照），确认 `inferredLabel` 更新。
 8. **无头数值沙盘**：先只实现成长曲线、Boss 苏醒阈值、C/D 收益结算，跑 CC/DD/DC/CD，验证 B 层排序是否成立。
 9. **StrategyOverride（第六节）**：在 Unity 场景整局锁定 CC/DD/DC/CD，复验 B 层收益矩阵。

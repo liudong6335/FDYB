@@ -1,6 +1,6 @@
 # 《分道扬镳》一方 AI 玩家功能开发清单
 
-> 版本：v1.1（补全 AI 技能施放、PvP 对抗、治疗、开场采集、经济裁剪、环境规避、圣物、心交付、淘汰与确定性；新增第三部分）
+> 版本：v1.3（冻结 3 秒单向申请承诺，移除 Boss 结盟仇恨门槛）
 > 状态：AI 玩家 Demo 开发基线
 > 用途：第一部分供人快速理解，第二部分供编码 Agent 按 AI 玩家实现规格与任务实施
 > 文档边界：本文只负责"AI 接管两名玩家之一"时的感知、快照、记忆、决策、路线、资源管理、生存、结盟申请、翻脸、终局行为和对 Player 系统的操作输出。不重定义 Boss、结盟、Common、Endgame、技能、塔、圣物、环境、物品与玩家死亡规则。
@@ -142,7 +142,8 @@ boss.awaken == true
 - 心被对方拾取中时，立即打断 / 抢心（事件响应，最高优先）。
 - 心已掉落且可达时优先抢心，除非自身残血。
 - 持圣物且 `soloWillingness > 0.6` 且未被追杀时选择 solo，不再结盟。
-- `allianceCooldown == 0` 且血量低于结盟阈值时按弱者 / 非弱者选择"弱者 + Boss"或"玩家间"结盟申请。
+- 与 Boss 结盟申请仅在 `CanApplyBossAlliance == true` 且战略评分满足时触发；生命低于 30%、Rage、非双人残局或 60 秒冷却未结束时不得申请。Boss 仇恨不限制申请。
+- 玩家间结盟申请仅在 `CanApplyPlayerAlliance == true` 且战略评分满足时触发；120 秒主动申请冷却、5 秒协商锁或 Boss 结盟后 10 秒封锁未结束时不得申请。
 - `towerStock > 0` 且当前无结盟时放置囤塔。
 - 否则默认逼近 Boss。
 
@@ -209,20 +210,24 @@ boss.awaken == true
 
 主要完成项：
 
-- 玩家间结盟：任意一方可申请，玩家之间没有仇恨门槛；每名玩家每局一次申请机会；2-3 秒确认。
-- 与 Boss 结盟：只在 Boss 苏醒后生效；申请不经过 Boss 主动概率，Boss 侧按 10 秒局势快照、残血排除和仇恨门槛判定。
-- AI 申请与 Boss 结盟时，自身当前对 Boss 的仇恨总分必须归零；伤害仇恨、圣物仇恨和追杀仇恨都会阻止。
-- AI 主动申请弱者 + Boss 结盟时，只走申请路径，不模拟 Boss 的 20% 主动概率。
+- 玩家间结盟：任意一方可申请，玩家之间没有仇恨门槛；每名玩家每次有效主动申请后进入 120 秒冷却；2-3 秒确认。
+- 玩家间结盟不设每局固定申请次数；主动申请冷却从有效提交时开始，接受或拒绝他人申请不触发自己的冷却。
+- 玩家间结盟申请被拒绝或超时后，双方进入 5 秒协商锁，期间不能再次互相申请。
+- 与 Boss 结盟：只在 Boss 苏醒后生效；申请不经过 Boss 主动概率，Boss 侧按 10 秒局势快照和残血排除判定，不检查仇恨。
+- AI 申请与 Boss 结盟时，生命比例不得低于 30%；正好 30% 时允许申请；Boss 仇恨不影响申请或 Boss 接受。
+- 与 Boss 结盟的主动申请冷却为 60 秒，从有效提交时开始；接受或拒绝 Boss 主动提议不触发玩家的申请冷却。
+- Boss + 玩家结盟期间以及结束后的 10 秒内，玩家间结盟申请和接受均禁止。
+- AI 主动申请与 Boss 结盟时，只走申请路径，不模拟 Boss 的 20% 主动概率。
+- 有效申请提交后进入 3 秒等待期：申请者、召唤物和塔停止伤害目标，目标保持完全自由。
+- 申请者主动攻击目标会立即取消申请；目标主动攻击申请者，或目标归属单位累计造成超过申请者最大生命值 5% 的实际伤害，视为拒绝。
 - 结盟期间负面技能不对对手生效，攻击塔不攻击对手，未放置塔锁定不可放置。
 - 翻脸判定分两类：结盟中途主动攻击（立即破裂 + 惩罚仇恨），结盟倒计时结束后首次攻击（破裂但不计惩罚）。
 - 结盟自然到期、翻脸、玩家淘汰、Boss 死亡时的快照刷新与惩罚仇恨由通用 `AllianceService` 与 Boss 侧规则负责，AI 只消费事件和公开状态。
 
 > ⚠️【文档未明确】以下结盟口径需要补齐：
-> 1. "每局一次申请机会"在超时 / 被拒后是否消耗（《结盟机制设计》开放问题 1）；
-> 2. AI 如何得知自己是否仍有申请机会，现有 `SelfState` 没有对应字段；
-> 3. 结盟期间 AI 应停手、继续打 Boss 还是准备翻脸，决策规格未写；
-> 4. "岛中岛任务结束前强制结盟"与"结盟系统只在 Boss 苏醒后生效"两处措辞冲突。
-> 详见第七节 U-16、U-17、U-26。
+> 1. 结盟期间 AI 应停手、继续打 Boss 还是准备翻脸，决策规格未写；
+> 2. "岛中岛任务结束前强制结盟"与"结盟系统只在 Boss 苏醒后生效"两处措辞冲突。
+> 详见第七节 U-16、U-26。
 
 ### 3.8 战斗与操作输出逻辑
 
@@ -371,7 +376,7 @@ AI 玩家模块只输出自己的 Intent 和动作请求：
 | 结盟血量阈值 `cfg_allianceHpThreshold` | 0.40 |
 | 接受结盟信任阈值 `cfg_trustAccept` | 60 |
 | 接受回魂信任阈值 `cfg_trustRevive` | 60 |
-| Boss 结盟概率 `cfg_bossAllyProb` | 0.50（0.3-0.7）；⚠️语义双重，见 U-34 |
+| AI 发起 Boss 结盟申请概率 `cfg_aiBossAllyApplyProb` | 0.50（0.3-0.7）；仅控制 AI 是否申请，Boss 是否接受由 Boss 侧规则判定 |
 | 圣物 solo 最低血量 `cfg_soloHpMin` | 0.30 |
 | 圣物 solo 对手邻近惩罚 `cfg_soloOpponentNearPenalty` | 1.5 |
 | 趋势低阈值 `cfg_rateLow` | 1.5 %/s |
@@ -387,7 +392,12 @@ AI 玩家模块只输出自己的 Intent 和动作请求：
 | 心拾取读条 | 10 秒；受击回退、移动重置；回退步长未定 |
 | 玩家间结盟时长 | 默认 45 秒（Boss 清单冻结值）；AI 候选 35 秒，见 U-35 |
 | 弱者 + Boss 结盟时长 | 默认 20 秒（Boss 清单冻结值）；AI 候选 17 秒，见 U-35 |
-| 结盟确认 / 冷却 | 2-3 秒 / 30 秒 |
+| Boss + 玩家主动申请冷却 | 60 秒；从有效提交时开始，接受/拒绝不触发 |
+| 玩家间主动申请冷却 | 120 秒；不设每局固定次数 |
+| 玩家间申请被拒/超时协商锁 | 5 秒 |
+| Boss 结盟期间及结束后的玩家间结盟封锁 | 10 秒 |
+| Boss 结盟最低生命比例 | 30%；低于 30% 禁止，正好 30% 允许 |
+| 结盟确认窗口 | 2-3 秒 |
 | 结盟结束惩罚 | 3 秒缓冲后 +5000，30 秒线性归零 |
 | 回魂窗口 / 确认 / 复活 | 10 秒 / 5 秒 / 15-20 秒，50% 生命 |
 | 种子组规模 | 每场景 30-50 局 + holdout |
@@ -418,7 +428,6 @@ AI 玩家模块只输出自己的 Intent 和动作请求：
 | U-14 | AI 如何打断对手抢心：普攻 / 技能 / 其他 | 《AI 决策落地执行规格》3.2 | 决定"打断"是否可实现 | 需明确打断手段与归属系统 |
 | U-15 | AI 永久淘汰后是否停 Tick、是否观察者写入 | 《玩家机制设计》1.5 / 《AI 数值测试与验收文档》4.6 | 影响 Endgame 双死与稳定性 | 需明确 AI 出局后状态 |
 | U-16 | 结盟期间 AI 的行为约束（停手 / 打 Boss / 准备翻脸） | 《结盟机制设计》五 / 《AI 决策落地执行规格》三 | AI 可能在结盟期做出违规动作 | 需补结盟期行为模板 |
-| U-17 | 玩家间结盟"每局一次申请机会"的消耗口径与 AI 可见状态 | 《结盟机制设计》十.1 | AI 无法判断是否还能申请 | 需补字段与消耗规则 |
 | U-18 | 非终局阶段 AI 是否主动申请玩家间结盟 | 《AI 决策落地执行规格》3.2、7.2 | 结盟可能只在终局触发 | 需明确各阶段结盟发起条件 |
 | U-19 | `cfg_gapLead` 同时用于弱势判定与路线判定是否合理 | 《AI 决策落地执行规格》4.1、4.3 | 一个参数控制两种语义 | 建议拆为 `cfg_underdogGap` 与 `cfg_routeGap` |
 | U-20 | 与 Boss 结盟后 AI 是否视为转阵营、是否需避免攻击 Boss | 《结盟机制设计》二.1 / 《Boss功能开发清单》3.5 | 盟友攻击 Boss 会缩短结盟 | 需明确 AI 是否知道时长调整规则 |
@@ -435,7 +444,6 @@ AI 玩家模块只输出自己的 Intent 和动作请求：
 | U-31 | AI 何时攻击对手玩家（压制 / 打残不打死 / 击杀背叛） | 《核心机制设计_囚徒困境引擎》二 / 《Boss战设计》四 | 玩家间对抗是囚徒困境核心，但决策层只在翻脸、圣物抢夺和终局给出 PvP 目标；Action 有 Attack 却没有 PvP 决策 | 需补 "骚扰 / 打残 / 击杀" 三档 PvP 行为与触发条件 |
 | U-32 | AI 的治疗手段与优先级 | 《游戏机制总览》3.1、3.2、6.3 / 《道具系统设计》 | 玩家没有自身治疗技能，`Heal` 需要落到药水、阿蛮回血点或营地回血；三者可达性与优先级未定 | 需明确治疗手段清单与选择规则 |
 | U-33 | 攻击对手（未击杀）是否推进 Boss 苏醒 | 《游戏机制总览》十一.15 / 《核心机制设计》二 | 决定 AI 能否从共享进度推断对手 PvP 行为，直接影响偷杀证据与收益判断 | 需先冻结"攻击 / 打残 / 击杀"各自的进度权重 |
-| U-34 | `cfg_bossAllyProb` 语义双重 | 《AI 决策落地执行规格》3.2 / 附录 A | 同一参数既表示"AI 是否发起弱者+Boss 申请"，又被写成"Boss 响应概率"；与 Boss 侧 20% 主动概率混淆 | 需拆为 AI 申请概率与 Boss 响应概率，或明确只保留一侧 |
 | U-35 | 结盟时长口径 AI 文档与 Boss 清单不一致 | 《AI 机制开发设计文档》附录 A / 《Boss功能开发清单》十.6 | AI 取 17s / 35s，Boss 清单冻结 20s / 45s | 需统一，或明确新手版与原型版分别取值 |
 | U-36 | 加速技能数值口径冲突 | 《游戏机制总览》3.1 / 《技能系统设计》二 | Q 加速一处为 30s CD，一处为 20s CD；AI 技能施放子模块无法确定上限 | 需统一技能数值来源后再接入 U-06 |
 | U-37 | 防御塔解锁时间与 AI 放置资格 | 《游戏机制总览》7.6 / 《塔防与塔系统设计》二 | 塔在任务结束 +5 分钟才解锁；AI 若只读配额会尝试提前放塔 | 放置合法性统一由塔系统判定，AI 只读可放置结果 |
@@ -714,17 +722,28 @@ ActionIntent:
 SelfState:
     entityId
     hp, hpMax
+    hpRatio
     power
+    bossHateTotal
+    selfRelicHate
+    alivePlayerCount
     towerStock, towerPlaced
     hasRelic
     relicType
     inEndgame
     isUnderdog
+    isHunted                    // Boss.currentTarget == self
     currentAlly                 // None / Player / Boss
     allianceVersion
     allianceTimer
-    allianceCooldown
-    playerAllianceAttemptAvailable   // ⚠️ 现有文档缺字段，见 U-17
+    hasPendingAllianceRequest   // 发起或收到，尚未响应完成
+    allianceRequestRole         // None / Applicant / Target
+    allianceRequestTargetId
+    allianceRequestRestrictionUntil
+    bossAllianceRequestCooldownUntil
+    playerAllianceRequestCooldownUntil
+    bossAlliancePvpBlockedUntil
+    playerAllianceNegotiationBlockedUntil
     heartProgress
 ```
 
@@ -757,8 +776,10 @@ PlayerView:
 BossState:
     progress
     awaken
+    phaseState                 // Weak / Normal / Rage
     currentEnrageLayer
     hpRatio
+    currentTarget
     allianceWith               // None / Player0 / Player1
     allianceVersion
 
@@ -799,7 +820,7 @@ AiConfig:
     allianceHpThreshold         // 0.40
     trustAccept                 // 60
     trustRevive                 // 60
-    bossAllyProb                // 0.50
+    aiBossAllyApplyProb         // 0.50；仅控制 AI 是否发起申请
     soloHpMin                   // 0.30
     soloOpponentNearPenalty     // 1.5
     rateLow / rateHigh          // 1.5 / 3.5 %/s
@@ -973,7 +994,29 @@ IF hasRelic AND boss.awaken AND soloWillingness > 0.6 AND NOT isHunted → solo
 
 ### 10.12 结盟与回魂决策
 
-接受结盟：
+主动申请硬前置：
+
+```text
+CanApplyBossAlliance =
+    boss.awaken
+    AND self.alivePlayerCount == 2
+    AND boss.phaseState != Rage
+AND self.hpRatio >= 0.30
+    AND self.bossAllianceRequestCooldownUntil <= gameTime
+    AND NOT self.hasPendingAllianceRequest
+    AND self.currentAlly == None
+
+CanApplyPlayerAlliance =
+    boss.awaken
+    AND self.alivePlayerCount == 2
+    AND self.currentAlly == None
+    AND NOT self.hasPendingAllianceRequest
+    AND gameTime >= self.bossAlliancePvpBlockedUntil
+    AND gameTime >= self.playerAllianceNegotiationBlockedUntil
+    AND self.playerAllianceRequestCooldownUntil <= gameTime
+```
+
+接受玩家间结盟：
 
 ```text
 acceptAlliance = isUnderdog
@@ -984,9 +1027,25 @@ acceptAlliance = isUnderdog
 弱者 + Boss 结盟申请（终局）：
 
 ```text
-isUnderdog AND boss.allianceWith != self
-AND deterministicRand(seed, gameTime) < cfg_bossAllyProb
+CanApplyBossAlliance
+AND isUnderdog
+AND boss.allianceWith != self
+AND deterministicRand(seed, gameTime) < cfg_aiBossAllyApplyProb
 → ApplyAlliance(Boss)
+```
+
+冷却与响应：
+
+```text
+有效主动申请提交
+→ 对应冷却立即开始
+→ Boss: 60s / Player: 120s
+
+接受或拒绝他人申请
+→ 不触发自己的主动申请冷却
+
+玩家间申请被拒绝或超时
+→ 双方 playerAllianceNegotiationBlockedUntil = gameTime + 5s
 ```
 
 回魂：
@@ -998,8 +1057,7 @@ AND deterministicRand(seed, gameTime) < cfg_bossAllyProb
         否则拒绝
 ```
 
-> ⚠️【文档未明确】弱者 + Boss 结盟申请被拒后是否进入冷却、AI 如何得知
-> 申请机会与冷却、结盟期行为约束，见 U-16、U-17、U-20。
+> ⚠️【文档未明确】结盟期行为约束仍需策划确认，见 U-16、U-20。
 
 ## 十一、裁决规则
 
@@ -1083,6 +1141,13 @@ AND deterministicRand(seed, gameTime) < cfg_bossAllyProb
 | 路线锁定 | >= 1 个快照周期 | `routeHoldUntil` |
 | 囤塔解锁 | 非结盟且（终局或结盟结束） | `currentAlly`、`inEndgame` |
 | 结盟接受 | isUnderdog / trust > 60 / hp < 0.40 | `trustAccept`、`allianceHpThreshold` |
+| Boss 主动申请门槛 | 生命比例 >= 30%、非 Rage、恰好 2 名玩家存活；Boss 仇恨不设门槛 | `SelfState`、`BossState` |
+| 申请等待期 | 有效提交后 3 秒；申请者及归属单位停手，目标保持自由 | `allianceRequestRestrictionUntil` |
+| 等待期拒绝条件 | 目标主动攻击，或目标归属单位累计伤害 > 最大生命值 5% | 3 秒等待窗口 |
+| Boss 主动申请冷却 | 有效提交后 60 秒，接受/拒绝响应不触发 | `bossAllianceRequestCooldownUntil` |
+| 玩家间主动申请冷却 | 有效提交后 120 秒，不设每局固定次数 | `playerAllianceRequestCooldownUntil` |
+| 玩家间协商锁 | 被拒/超时后双方 5 秒内不能再次互相申请 | `playerAllianceNegotiationBlockedUntil` |
+| Boss 结盟后封锁 | 结盟期间及结束后的 10 秒内申请和接受均禁止 | `bossAlliancePvpBlockedUntil` |
 | 回魂接受 | trust >= 60 且双方有防具宝石 | `trustRevive` |
 | 终局进入 | timeToEndgame <= 0 或 seaLevel >= 峰顶或 boss.awaken | `inEndgame` |
 | 心拾取 | 10 秒读条；受击回退；移动重置 | Endgame 提供，回退值未定 |
@@ -1115,7 +1180,14 @@ AND deterministicRand(seed, gameTime) < cfg_bossAllyProb
 | trust 扣分 / 加分 / 衰减 | 30 / 15 / 0.05 | 暂定 |
 | 玩家间结盟时长 | 默认 45s；AI 候选 35s | 见 U-35 / 15.2 |
 | 与 Boss 结盟时长 | 默认 20s；AI 候选 17s | 见 U-35 / 15.2 |
-| 结盟确认 / 冷却 | 3s / 30s | 暂定 |
+| Boss + 玩家主动申请冷却 | 60s；有效提交时开始 | 暂定 |
+| 玩家间主动申请冷却 | 120s；有效提交时开始 | 暂定 |
+| 玩家间申请被拒/超时协商锁 | 5s | 暂定 |
+| Boss 结盟期间及结束后的玩家间封锁 | 10s | 暂定 |
+| Boss 结盟最低生命比例 | 30%；低于 30% 禁止，正好 30% 允许 | 暂定 |
+| 结盟确认窗口 | 3s | 暂定 |
+| 结盟申请等待期 | 3s | 暂定 |
+| 目标归属单位累计伤害拒绝阈值 | > 最大生命值 5%；正好 5% 不拒绝 | 暂定 |
 | 结盟惩罚仇恨 | 3s 缓冲后 +5000，30s 归零 | 暂定 |
 | 回魂窗口 / 确认 / 复活 | 10s / 5s / 15-20s | 属玩家机制 |
 | 回魂生命 | 50% | 属玩家机制 |
@@ -1230,8 +1302,8 @@ Endgame 心状态机
 
 | 编号 | 任务 | 依赖 | 验收 |
 | --- | --- | --- | --- |
-| AI-ALLY-01 | 实现玩家间结盟申请 / 接受 / 拒绝 | IAllianceService、AI-DECIDE-02 | 接受条件参数化；申请机会字段缺口先解决 U-17 |
-| AI-ALLY-02 | 实现弱者 + Boss 结盟申请 | IAllianceService、IBossStateProvider | 只走申请路径；不模拟 Boss 主动概率 |
+| AI-ALLY-01 | 实现玩家间结盟申请 / 接受 / 拒绝 | IAllianceService、AI-DECIDE-02 | 有效主动申请后进入 120 秒冷却；拒绝/超时后双方 5 秒协商锁；接受/拒绝不触发自己的冷却 |
+| AI-ALLY-02 | 实现弱者 + Boss 结盟申请与 3 秒等待期 | IAllianceService、IBossStateProvider | Boss 已苏醒、非 Rage、恰好 2 名玩家存活、生命比例 >=30%、60 秒冷却结束时申请；Boss 仇恨不设门槛；申请者及归属单位停止伤害目标 3 秒，目标保持自由 |
 | AI-ALLY-03 | 实现 Boss 结盟事件响应 | AI-ALLY-02、AiEventBridge | 识别被追杀方并切换风筝 / 拖延 / 削弱 Boss |
 | AI-ALLY-04 | 实现翻脸与报复响应 | AI-ALLY-01、AI-MEM-01 | 区分中途翻脸与到期后翻脸；重置 recentlyBetrayedTimer |
 | AI-ALLY-05 | 实现结盟期行为约束（待 U-16） | AI-ALLY-01、AI-RES-03 | 保持可关闭；不违反盟友过滤与塔锁定 |
@@ -1287,6 +1359,14 @@ Player 回魂执行与淘汰事件
 26. AI 死亡必须走与真人玩家完全相同的死亡流程：Boss 苏醒进度 +60 秒、10 秒回魂窗口和淘汰判定均由 Player / 对局系统统一执行，AI 不得走单独分支。
 27. 放塔资格（解锁时间、落点、40m 排他、配额）只由塔系统判定，AI 只读可放置结果，不自行计算。
 28. 对手 PvP 行为（压制 / 打残 / 击杀）在 U-31、U-33 明确前保持占位，不进入默认决策。
+29. 玩家主动申请与 Boss 结盟时，生命比例必须 >=30%；正好 30% 允许；Boss 仇恨不限制申请或接受。
+30. Boss + 玩家主动申请冷却为 60 秒，玩家间主动申请冷却为 120 秒；均从有效提交时开始，接受/拒绝响应不触发自己的主动申请冷却。
+31. 玩家间结盟不设每局固定申请次数；无效提交不消耗冷却。
+32. 玩家间申请被拒绝或超时后，双方 5 秒内不能再次互相申请。
+33. Boss + 玩家结盟期间以及结束后的 10 秒内，玩家间结盟申请和接受均禁止。
+34. 主动申请资格只由申请者依据自身状态判断；目标角色只处理接受或拒绝，不重复校验发起资格。
+35. 有效申请提交后进入 3 秒等待期；申请者及归属单位停止攻击目标，目标保持完全自由。
+36. 申请者主动攻击目标立即取消申请；目标主动攻击申请者，或目标归属单位累计造成超过申请者最大生命值 5% 的实际伤害，视为拒绝。
 
 ## 十四、完成定义
 
@@ -1339,7 +1419,7 @@ AI 玩家 Demo 完成时，以下流程必须可重复运行：
 | U-14 | 心争夺打断手段 | 23.1 | 【本文补全建议 · 待策划确认】 |
 | U-15 | 淘汰后行为 | 24.1 | 【本文补全建议 · 待策划确认】 |
 | U-16 | 结盟期行为约束 | 16.3 | 【本文补全建议 · 待策划确认】 |
-| U-17 | 结盟申请机会消耗 | 16.4 | 仍待策划冻结 |
+| U-17 | 结盟主动申请次数与冷却 | 2.3 / 15.2 / 16.1 | 已冻结 |
 | U-18 | 非终局结盟发起 | 16.2 | 【本文补全建议 · 待策划确认】 |
 | U-19 | cfg_gapLead 语义重叠 | 15.2 | 【本文统一口径 · 待策划确认】 |
 | U-20 | 与 Boss 结盟后的行为 | 16.3 | 【本文补全建议 · 待策划确认】 |
@@ -1356,7 +1436,7 @@ AI 玩家 Demo 完成时，以下流程必须可重复运行：
 | U-31 | PvP 对抗 | 18 | 【本文补全建议 · 待策划确认】 |
 | U-32 | 治疗与回血 | 19 | 【本文补全建议 · 待策划确认】 |
 | U-33 | 攻击对手是否推 Boss | 18.4 | 默认按"不推进"，待冻结 |
-| U-34 | cfg_bossAllyProb 语义 | 15.2 | 【本文统一口径 · 待策划确认】 |
+| U-34 | cfg_bossAllyProb 语义 | 15.2 | 已冻结 |
 | U-35 | 结盟时长口径 | 15.2 | 【本文统一口径 · 待策划确认】 |
 | U-36 | 加速技能数值 | 15.2 | 【本文统一口径 · 待策划确认】 |
 | U-37 | 塔解锁与放置资格 | 15.2 | 【本文统一口径 · 待策划确认】 |
@@ -1377,8 +1457,9 @@ AI 玩家 Demo 完成时，以下流程必须可重复运行：
 | U-27 版本时长 | AI 只读取 `WorldState.timeToEndgame`；新手版 10 分钟、首发进阶版 15 分钟、完整版 22-25 分钟分别由场景与 `AiConfig` 注入，不在 AI 代码中写死 | 版本规划 |
 | U-28 旧 Utility AI | 旧 `Player/Behaviour` 保留为动作层与调试资产，`Assets/Script/AI` 的 `Decide` 为正式决策层；同一角色只允许一个决策层驱动 | 避免双 AI 并存 |
 | U-29 底层操作 | AI 复用 Player 的移动、寻路、普攻、读条、拾取、放置与技能施放；AI 只发 `ActionIntent` | 游戏机制总览 3.1 |
-| U-34 `cfg_bossAllyProb` | 拆为 AI 侧 `aiBossAllyApplyProb`（默认 0.5，仅表示 AI 是否发起申请）与 Boss 侧 `bossAllyAcceptProb`；AI 不模拟 Boss 的 20% 主动概率 | 结盟机制设计二.1 |
+| U-34 `cfg_bossAllyProb` | 拆为 AI 侧 `aiBossAllyApplyProb`（默认 0.5，仅表示 AI 是否发起申请）；Boss 是否接受及 20% 主动提议概率均由 Boss 侧规则决定，AI 不模拟 | 结盟机制设计二.1 |
 | U-35 结盟时长 | AI 侧读取 `AllianceService` 的当前时长；默认按 Boss 清单冻结值：与 Boss 20s、玩家间 45s；AI 附录的 17s / 35s 作为待实测候选 | Boss 清单十.6 |
+| U-17 主动申请限制 | 不设每局固定次数；Boss 主动申请冷却 60s、玩家间 120s，均从有效提交时开始；接受/拒绝响应不触发自己的冷却；玩家间被拒/超时后双方增加 5s 协商锁；Boss 结盟期间及结束后 10s 内禁止玩家间结盟 | 结盟机制设计二.3 |
 | U-36 加速技能 | 以《技能系统设计》为准：加速 3 秒 +50% 移速、CD 20s；《游戏机制总览》的 30s 作为旧实现待迁移 | 技能系统设计二 |
 | U-37 塔放置 | AI 只读取塔系统的"已解锁 / 合法落点 / 40m 排他 / 配额"结果；任务结束 +5 分钟解锁由塔系统判定 | 游戏机制总览 7.6 |
 
@@ -1390,7 +1471,8 @@ AI 玩家 Demo 完成时，以下流程必须可重复运行：
 
 ```text
 申请玩家间结盟：
-    isUnderdog OR hpRatio < cfg_allianceHpThreshold OR trustScore < cfg_trustAccept
+    CanApplyPlayerAlliance
+    AND (isUnderdog OR hpRatio < cfg_allianceHpThreshold OR trustScore < cfg_trustAccept)
     → ApplyAlliance(Player)
 
 响应玩家间结盟申请：
@@ -1399,16 +1481,23 @@ AI 玩家 Demo 完成时，以下流程必须可重复运行：
                   OR hpRatio < cfg_allianceHpThreshold
 
 申请与 Boss 结盟（弱者路径）：
-    当前对 Boss 仇恨总分 == 0
-    AND hpRatio >= allianceMinHpRatio
+    CanApplyBossAlliance
+    AND hpRatio >= 0.30
     AND boss.allianceWith != self
     AND deterministicRand(seed, gameTime) < aiBossAllyApplyProb
     → ApplyAlliance(Boss)
 ```
 
-- 玩家间结盟申请每局一次机会；申请失败、被拒或超时的消耗口径仍以 U-17 为准。
+- 玩家间结盟不设每局固定次数；每次有效主动申请后进入 120 秒冷却。
+- 玩家间申请被拒绝或超时后，双方进入 5 秒协商锁。
+- Boss + 玩家主动申请冷却为 60 秒，从有效提交时开始。
+- 接受或拒绝他人申请、接受 Boss 主动提议，都不触发自己的主动申请冷却。
+- Boss + 玩家结盟期间以及结束后的 10 秒内，玩家间结盟申请和接受均禁止。
 - 与 Boss 结盟只走申请路径；Boss 是否同意由其 `BossAllianceController` 决定，AI 不读取其内部判定过程。
-- 申请失败后是否进入 30 秒冷却由 `AllianceService` 返回状态决定。
+- AI 主动申请前只依据自身状态判断发起资格；目标角色只接受或拒绝，不重复校验申请者的发起资格。
+- `AllianceService` 只记录申请、冷却和关系结果，不代替目标角色再次判断主动申请条件。
+- 有效申请提交后进入 3 秒等待期；AI 作为申请者时必须停止自身、召唤物和塔对目标的新伤害，但不得改变其他状态或数值。
+- AI 作为目标时保持完全自由；AI 主动攻击申请者会拒绝申请，AI 归属单位累计造成超过申请者最大生命值 5% 的实际伤害时也视为拒绝。
 
 ### 16.2 非终局结盟发起
 
@@ -1422,8 +1511,8 @@ AI 玩家 Demo 完成时，以下流程必须可重复运行：
 | 终局 | 是 | 按终局收益评分选择玩家间或弱者 + Boss |
 
 - 非终局主动申请排除 `trend == URGENT` 且 `aggressionScore` 高的情形。
-- 结盟冷却未结束时不得重复申请。
-- 申请失败后进入 30 秒冷却（沿用结盟机制设计）。
+- 对应主动申请冷却未结束时不得重复申请。
+- Boss + 玩家申请冷却为 60 秒，玩家间申请冷却为 120 秒，均从有效提交时开始。
 
 ### 16.3 结盟期行为约束
 
@@ -1661,7 +1750,7 @@ lootValuePriority = 任务物品 > 圣物 / 恶魔之心 > 技能书 > 塔材料
 - 按版本启用：新手版无圣物；首发进阶版为地图拾取一次性减伤；完整版为合成 / 掉落 / 替换。
 - 无圣物：优先抢夺 / 击杀持有者；通过 `playerView.hasRelic` 与 `IRelicStateProvider` 获取公开信息。
 - 有圣物：Boss 残血且自身血线健康时优先 solo；避免无意义 PvP 以防掉落。
-- 圣物仇恨未归零时不能与 Boss 结盟；AI 需把 `relicHate` 状态纳入结盟判断。
+- 圣物仇恨继续影响 Boss 的目标选择，但不再阻止与 Boss 结盟；AI 不需要把 `relicHate` 作为结盟申请门槛。
 - 圣物拾取、销毁、掉落与替换由 Items 系统执行，AI 只发拾取 / 交付意图。
 
 ## 二十三、心争夺与交付补全（U-14、U-30、U-13）

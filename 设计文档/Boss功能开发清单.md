@@ -284,12 +284,15 @@ Ready / Cooldown / Disabled
 - 绝对门禁：`alivePlayerCount != 2` 时禁止 Boss + 玩家结盟，拒绝申请、停止主动提议并取消待确认请求。
 - 任一玩家永久淘汰时，立即结束其参与的所有玩家间结盟和 Boss + 玩家结盟，不进入缓冲、不产生追杀仇恨。
 - Boss + 玩家结盟：时长暂定 20 秒；使用上一周期 10 秒局势快照决定是否愿意结盟；
-  申请者当前对 Boss 的总仇恨必须为 0，且不处于残血排除状态。
+  申请者不处于残血排除状态；Boss 不检查申请者对 Boss 的仇恨。
 - Boss 主动提议：只在 `BossAllianceAllowed=true` 且未触发 Boss 战力压制时发起，每周期同一玩家只提议一次，
   主动概率上限 20%；玩家申请不经过主动概率。
 - 申请失败、被拒或超时后进入 30 秒申请冷却。
 - 玩家 + 玩家结盟：时长暂定 45 秒；每名玩家每局一次申请机会；
   发起后 3 秒内确认，否则按拒绝处理。
+- 有效结盟申请提交后进入 3 秒等待期：申请者本体、召唤物、分身和塔停止攻击目标，目标保持完全自由。
+- 申请者主动攻击目标立即取消申请；目标主动攻击申请者，或目标归属单位累计造成超过申请者最大生命值 5% 的实际伤害，视为拒绝。
+- Boss 主动提议时，Boss 是申请者，同样停止自身及归属单位攻击；玩家作为目标保持自由。
 - 结盟期间盟友不进入对方攻击目标池；玩家间负面技能不生效，正面技能正常生效。
 - Boss + 玩家结盟中，盟友造成真实伤害会缩短时长，非盟友造成真实伤害会延长时长；按攻击者归属和游戏秒去重，同一攻击者每秒最多触发一次，最终限制在 `[0, 基础时长]`。
 - 翻脸或自然结束时，T0 立即结束关系并递增 `allianceVersion`，刷新目标池、目标快照、5 秒求生快照、
@@ -737,6 +740,10 @@ allianceId
 allianceTargetId
 allianceVersion
 allianceRequestState
+allianceApplicationRole         // None / Applicant / Target
+allianceApplicationTargetId
+allianceApplicationRestrictionUntil
+incomingApplicationDamage
 entityMemory
 isDead
 ```
@@ -1176,19 +1183,18 @@ finalScore =
 - 候选目标死亡、成为盟友、不可选或离开战斗区域时，不参与残血追击排序。
 - 普通变化不打断快照。
 - 目标跌破 10% 可以立即打断快照。
-- Boss 结盟资格不保存“是否攻击过”标记，直接读取申请时的 `finalScore`：
+- Boss 结盟资格不保存“是否攻击过”标记，也不读取申请者的对 Boss 仇恨：
 
 ```text
 BossAllianceEligible =
     alivePlayerCount == 2
     AND phaseState != Rage
-    AND finalScore <= allianceHateThreshold
     AND hpRatio >= allianceMinHpRatio
 ```
 
 - `alivePlayerCount` 必须恰好为 2 且 `phaseState != Rage`；只剩 1 名或 0 名存活玩家时，
   任何玩家都不能与 Boss 结盟。
-- `allianceHateThreshold` 暂定 `0`；伤害仇恨、圣物仇恨、追杀仇恨等仍存在时不能与 Boss 结盟，对应分项消散后自动恢复资格。
+- 伤害仇恨、圣物仇恨和追杀仇恨继续参与正常目标选择，但不阻止结盟申请或 Boss 接受。
 - 残血排除使用独立的 `allianceMinHpRatio`，避免只依赖仇恨分值。
 
 ### 9.7.1 目标、追击与攻击距离
@@ -1251,7 +1257,7 @@ BossAllianceCanProceed =
 规则：
 
 - `ShouldSeekAlliance` 是 `BossAllianceController` 按《结盟机制设计》第三节判定流程输出的结果；本文件不重复定义正向结盟条件，Boss 行为层只消费该布尔结果。
-- `BossAllianceAllowed` 是结盟的绝对总门禁，必须为 `true` 才允许申请、主动提议或接受申请。
+- `BossAllianceAllowed` 只决定 Boss 是否愿意接受申请或主动提议，不用于验证玩家是否有资格发起申请。
 - `alivePlayerCount != 2` 时立即设置 `BossAllianceAllowed = false`、`ShouldSeekAlliance = false`。
 - 单人残局不得创建新的结盟请求；已有 Boss + 玩家结盟立即终止，不产生追杀仇恨。
 - 单人残局或 Rage 状态下，`BossPowerAdvantage` 不参与实际决策。
@@ -1259,8 +1265,8 @@ BossAllianceCanProceed =
 - `BossPerceivedPower = 玩家实际战力 × random(0.95, 1.05)`。
 - 随机倍率在每次 10 秒结盟策略快照内固定。
 - 必须使用严格小于 `<`；正好等于 70% 不构成战力压制。
-- `BossPowerAdvantage = true` 时，本周期 `ShouldSeekAlliance（是否寻求结盟）= false`，拒绝申请并停止主动提议。
-- 只有 `BossAllianceCanProceed = true` 时，才继续检查仇恨、残血、申请冷却和结盟资格。
+- `BossPowerAdvantage = true` 时，本周期 `ShouldSeekAlliance（是否寻求结盟）= false`，拒绝玩家响应并停止主动提议。
+- 只有 `BossAllianceCanProceed = true` 时，才继续检查残血、申请冷却和结盟资格；不检查对 Boss 仇恨。
 - `BossPowerAdvantage = false` 只表示没有触发战力压制，不能替代 `BossAllianceAllowed`。
 - `phaseState == Rage` 时直接禁止结盟，不进入 `BossPowerAdvantage` 判断。
 - 少于两名存活玩家时禁止所有 Boss + 玩家结盟，不得把 `BossPowerAdvantage = false` 解释为可结盟。
@@ -1509,7 +1515,9 @@ Boss 的发布义务：
 | Normal 求生退出 | 生命比例 ≥ 30% | `normalSurviveExitHpRatio` |
 | 威胁评估 | 每累计 10s 计算一次 | `threatEvaluationInterval` |
 | Boss 结盟总门禁 | 存活玩家数 == 2 且非 Rage | `alivePlayerCount`、`phaseState` |
-| Boss 结盟资格 | 总门禁为真，且当前总仇恨 <= 0、生命比例 >= 30% | `BossAllianceAllowed`、`allianceHateThreshold`、`allianceMinHpRatio` |
+| Boss 结盟资格 | 总门禁为真且生命比例 >= 30%；不检查对 Boss 仇恨 | `BossAllianceAllowed`、`allianceMinHpRatio` |
+| 结盟申请等待期 | 有效提交后 3 秒；申请者及归属单位停止攻击，目标保持自由 | `allianceApplicationRestrictionUntil` |
+| 等待期拒绝条件 | 目标主动攻击，或目标归属单位累计伤害 > 最大生命值 5% | `incomingApplicationDamage` |
 | 斩杀窗口 | 仅当槽位启用斩杀策略时生效；Demo 暂按目标生命 <= 预期伤害 × 1.1，正式规则待技能设计 | `lethalPriorityEnabled`、`lethalTolerance` |
 | Boss 战力读取浮动 | 角色实际战力 × 0.95-1.05 | `bossPowerNoise` |
 
@@ -1701,10 +1709,10 @@ BEHAVIOR-03 Kite 占位配置（当前禁用）
 | ALLY-01 | 10 秒局势判断快照 | CORE-09（外部）、ALLY-00（外部）、POWER-04（外部） | 申请使用上一周期结果，包含固定 Boss 感知战力 |
 | ALLY-13 | 结盟状态实时版本覆盖 | ALLY-00（外部）、ALLY-01 | 结盟开始/结束/翻脸立即更新 allianceState 并递增 allianceVersion；目标过滤立即生效 |
 | ALLY-12 | 结盟总门禁、战力压制与决策 | ALLY-01、POWER-04（外部） | 存活玩家数必须恰好为 2；单人残局拒绝申请、停止提议并结束现有结盟；Rage 禁止结盟 |
-| ALLY-02 | Boss 结盟仇恨门槛 | TARGET-04、ALLY-01 | 当前 finalScore <= 0 才能申请与 Boss 结盟 |
+| ALLY-02 | Boss 结盟无仇恨门槛与 3 秒等待期 | ALLY-01 | Boss 接受结盟不读取对 Boss 仇恨；申请者本体、召唤物、分身和塔停止攻击目标；目标保持自由；申请者主动攻击取消申请，目标主动攻击或目标归属单位累计伤害 >5% 最大生命视为拒绝 |
 | ALLY-03 | Boss 残血排除 | ALLY-01 | 生命比例低于 allianceMinHpRatio 时不可与 Boss 结盟 |
 | ALLY-04 | Boss 主动提议 | ALLY-12 | 存活玩家数必须为 2；上限 20%；同周期同一玩家不重复；单人残局不提议 |
-| ALLY-05 | 玩家申请与 Boss 响应 | ALLY-03、ALLY-04、ALLY-12 | 申请、接受、拒绝、超时和 30 秒冷却完整；单人残局直接拒绝 |
+| ALLY-05 | 玩家申请与 Boss 响应 | ALLY-03、ALLY-04、ALLY-12 | 申请、接受、拒绝、超时和 30 秒冷却完整；单人残局直接拒绝；执行 3 秒单向申请限制 |
 | ALLY-10 | Boss 结盟时长与事件调整 | ALLY-05 | 20 秒基础时长；按 `(allianceId, attackerOwnerId, gameSecondBucket)` 去重；钳位 [0, 20s] |
 | ALLY-08 | Boss 结盟结束与目标快照刷新 | ALLY-07（外部） | T0 刷新目标/求生/策略区块；T+3 增加 5000 追杀仇恨并刷新目标排序 |
 | ALLY-09 | Boss 死亡与玩家淘汰关系 | ALLY-08 | 任一玩家死亡结束其参与结盟；Boss 死亡结束全部结盟；均不进入缓冲、不产生追杀仇恨 |
@@ -1759,7 +1767,7 @@ initialStrength
 11. BossBehaviorController 只输出战斗意图，不直接执行移动、攻击、技能或结盟。
 12. SkillCard 不保存冷却和运行时状态；实际冷却、优先级和触发策略属于 SkillSlotBinding，剩余状态属于 SkillSlotRuntime。
 13. Boss 生命周期状态、Weak / Normal / Rage 强度状态和 enrageLayer 强化层互相独立。
-14. Boss 结盟资格只读取当前仇恨总分和生命比例，不保存“从未攻击过”标记。
+14. Boss 结盟资格只读取生命比例和公共门禁，不读取申请者对 Boss 的仇恨，不保存“从未攻击过”标记。
 15. 所有随机决策必须使用 encounter seed，不得使用全局随机源。
 16. 实际战力只由 CombatPowerService 计算，UI 和 Boss 模块不得各自重算。
 17. Boss 的战力比较和同分裁决只读取当前策略快照中的 bossPerceivedPower。
@@ -1805,6 +1813,8 @@ initialStrength
 57. `BossController.cs` 统一负责死亡结算、动作锁释放、事件发布、掉落请求和强制快照刷新，不新增独立死亡脚本。
 58. `BossContext.cs` 是 Boss 依赖唯一组装点；Boss 模块不得使用单例或服务定位器获取外部依赖。
 59. `SkillEffectApplier.cs` 负责技能效果条件和效果应用；`BossSkillController.cs` 不读取效果活动状态。
+60. 有效结盟申请后进入 3 秒等待期；申请者及归属单位停止攻击目标，目标保持完全自由。
+61. 申请者主动攻击目标立即取消申请；目标主动攻击申请者或目标归属单位累计造成 >5% 最大生命实际伤害视为拒绝。
 
 ## 十三、完成定义
 
